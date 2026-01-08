@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>لوحة إدارة إعدادي</title>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; background: #0f172a; color: white; margin: 0; padding: 10px; }
+        #login { position: fixed; inset: 0; background: #1e293b; display: flex; justify-content: center; align-items: center; z-index: 1000; }
+        .login-box { background: #334155; padding: 25px; border-radius: 20px; text-align: center; border: 2px solid #6366f1; }
+        #admin { display: none; max-width: 900px; margin: auto; padding-bottom: 50px; }
+        
+        .top-control { display: flex; justify-content: space-between; align-items: center; background: #1e293b; padding: 10px 15px; border-radius: 12px; margin-bottom: 20px; border: 1px solid #334155; position: sticky; top: 10px; z-index: 99; box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
+        
+        .section { background: #1e293b; padding: 15px; border-radius: 15px; margin-bottom: 20px; border: 1px solid #334155; }
+        
+        /* ركن الدعم النفسي باللون الأحمر */
+        .psy-section-red { background: #7f1d1d; padding: 15px; border-radius: 15px; margin-bottom: 20px; border: 2px solid #ef4444; box-shadow: 0 0 15px rgba(239, 68, 68, 0.2); }
+        
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(105px, 1fr)); gap: 12px; }
+        .card { background: #0f172a; padding: 10px; border-radius: 12px; text-align: center; border: 1px solid #1e293b; transition: 0.3s; }
+        
+        button { border: none; border-radius: 6px; cursor: pointer; color: white; transition: 0.2s; }
+        .btn-edit-mode { background: #6366f1; padding: 8px 15px; font-weight: bold; }
+        .btn-save-small { background: #22c55e; padding: 5px 10px; font-size: 11px; font-weight: bold; }
+        
+        .edit-tools { display: none; margin-top: 10px; border-top: 1px solid #334155; padding-top: 10px; }
+        .plus-minus { display: flex; gap: 4px; margin-bottom: 8px; }
+        .plus-minus button { flex: 1; padding: 5px; font-weight: bold; font-size: 16px; }
+        
+        input, textarea { padding: 8px; border-radius: 6px; border: none; outline: none; background: #0f172a; color: white; width: 100%; box-sizing: border-box; }
+        .add-area { display: none; background: #334155; padding: 10px; border-radius: 10px; margin-bottom: 15px; gap: 10px; }
+        
+        /* التنبيه بلون عادي في النهاية */
+        .normal-alert-box { background: #1e293b; border: 1px solid #334155; padding: 15px; border-radius: 15px; margin-top: 30px; }
+    </style>
+</head>
+<body>
+
+<div id="login">
+    <div class="login-box">
+        <h3>† دخول خدام إعدادي †</h3>
+        <input type="password" id="passInput" placeholder="كلمة السر">
+        <button onclick="checkPass()" style="background: #22c55e; padding: 10px 20px; margin-top: 10px; font-weight: bold;">دخول</button>
+    </div>
+</div>
+
+<div id="admin">
+    <div style="text-align: center; margin-bottom: 10px;">
+        <h3 style="margin:0; color:#818cf8;">إدارة خدمة إعدادي</h3>
+        <small style="opacity: 0.6;">كنيسة العذراء وأبوسيفين وأبسخيرون القليني</small>
+    </div>
+
+    <div class="top-control">
+        <button id="modeBtn" onclick="toggleEditMode()" class="btn-edit-mode">📝 وضع التعديل</button>
+        <button onclick="saveToFirebase()" class="btn-save-small">💾 حفظ الكل</button>
+    </div>
+
+    <div class="section">
+        <div id="addArea" class="add-area">
+            <input type="text" id="nameInp" placeholder="اسم مخدوم جديد..." style="flex:1;">
+            <button onclick="addNewMakhdoum()" style="background:#22c55e; padding:0 15px;">إضافة</button>
+        </div>
+        <div id="leaderboard" class="grid"></div>
+    </div>
+
+    <div class="section" style="border-right: 4px solid #6366f1;">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+            <h4 style="margin:0;">💬 الشات</h4>
+            <button id="chatStatus" onclick="toggleChat()" style="font-size:10px; padding:4px 8px;"></button>
+        </div>
+        <div id="adminChat" style="height:80px; overflow-y:auto; font-size:12px; margin-top:10px; background:#0f172a; padding:5px; border-radius:8px;"></div>
+    </div>
+
+    <div class="psy-section-red">
+        <h4 style="margin:0; color:#ffedd5;">🚨 ركن المساندة النفسية (رسائل المخدومين)</h4>
+        <div id="psyList" style="margin-top:10px;"></div>
+    </div>
+
+    <div class="normal-alert-box">
+        <h4 style="margin: 0 0 10px 0; color: #818cf8;">📢 تنبيه للمخدومين (سيظهر للمخدومين بالأحمر)</h4>
+        <textarea id="alertContent" placeholder="اكتب التنبيه هنا..." style="height: 50px; margin-bottom: 10px; border: 1px solid #334155;"></textarea>
+        <div style="display: flex; gap: 5px;">
+            <button onclick="sendAlert()" style="background: #6366f1; flex: 2; padding: 10px; font-weight: bold;">نشر التنبيه</button>
+            <button onclick="clearAlert()" style="background: #475569; flex: 1; padding: 10px;">حذف</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    const config = { databaseURL: "https://church-a408e-default-rtdb.firebaseio.com/" };
+    firebase.initializeApp(config);
+    const db = firebase.database();
+    
+    let localData = [];
+    let isEditMode = false;
+
+    function checkPass() {
+        if(document.getElementById('passInput').value === "jesus") {
+            document.getElementById('login').style.display = 'none';
+            document.getElementById('admin').style.display = 'block';
+            loadDataOnce();
+        } else { alert("كلمة السر خطأ!"); }
+    }
+
+    function sendAlert() {
+        const txt = document.getElementById('alertContent').value;
+        if(txt.trim() !== "") {
+            db.ref("admin_announcement").set(txt).then(() => alert("✅ تم نشر التنبيه"));
+        } else { alert("برجاء كتابة نص أولاً"); }
+    }
+
+    function clearAlert() {
+        db.ref("admin_announcement").set("").then(() => {
+            document.getElementById('alertContent').value = "";
+            alert("🗑️ تم حذف التنبيه");
+        });
+    }
+
+    function loadDataOnce() {
+        db.ref("admin_announcement").once("value", snap => {
+            if(snap.exists()) document.getElementById('alertContent').value = snap.val();
+        });
+
+        db.ref("points_data").once("value", snap => {
+            const data = snap.val();
+            localData = data ? Object.keys(data).map(k => ({id:k, ...data[k]})) : [];
+            renderUI();
+        });
+
+        db.ref("settings/chatEnabled").on("value", snap => {
+            const status = snap.val() !== false;
+            const btn = document.getElementById('chatStatus');
+            btn.innerText = status ? "إيقاف الشات" : "تشغيل الشات";
+            btn.style.background = status ? "#ef4444" : "#22c55e";
+        });
+
+        db.ref("psychology/confessions").on("value", snap => {
+            const box = document.getElementById('psyList'); box.innerHTML = "";
+            snap.forEach(c => {
+                const isEmergency = c.val().need === "إنقاذ سريع 🚨";
+                box.innerHTML += `<div style="background:${isEmergency ? '#450a0a' : '#0f172a'}; padding:10px; margin-bottom:8px; border-radius:10px; border: 1px solid ${isEmergency ? '#ef4444' : '#334155'};">
+                    <b style="color:#f472b6;">${c.val().sender}:</b> 
+                    <span style="background:#ef4444; color:white; font-size:10px; padding:2px 5px; border-radius:4px;">${c.val().need || 'فضفضة'}</span>
+                    <p style="margin:5px 0; font-size:13px;">${c.val().text}</p>
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <span style="font-size:10px; opacity:0.6;">${c.val().time || ''}</span>
+                        <button onclick="if(confirm('حذف الرسالة؟')) db.ref('psychology/confessions/${c.key}').remove()" style="color:#ef4444; background:none; font-size:12px;">حذف 🗑️</button>
+                    </div>
+                </div>`;
+            });
+        });
+    }
+
+    function toggleEditMode() {
+        isEditMode = !isEditMode;
+        const btn = document.getElementById('modeBtn');
+        const addArea = document.getElementById('addArea');
+        btn.innerText = isEditMode ? "✅ إنهاء التعديل" : "📝 وضع التعديل";
+        btn.style.background = isEditMode ? "#22c55e" : "#6366f1";
+        addArea.style.display = isEditMode ? "flex" : "none";
+        renderUI();
+    }
+
+    function renderUI() {
+        const list = document.getElementById('leaderboard');
+        list.innerHTML = "";
+        localData.sort((a,b) => b.score - a.score).forEach((p, i) => {
+            list.innerHTML += `
+                <div class="card">
+                    <div style="font-size:11px; height:28px; overflow:hidden;">${p.name}</div>
+                    <div style="font-size:22px; font-weight:bold; color:#fbbf24;">${p.score}</div>
+                    <div class="edit-tools" style="display: ${isEditMode ? 'block' : 'none'}">
+                        <div class="plus-minus">
+                            <button onclick="updateScore(${i}, 1)" style="background:#22c55e">+</button>
+                            <button onclick="updateScore(${i}, -1)" style="background:#ef4444">-</button>
+                        </div>
+                        <div style="display:flex; gap:2px;">
+                            <button onclick="renameMakhdoum(${i})" style="flex:1; background:#475569; font-size:10px; padding:4px;">تعديل</button>
+                            <button onclick="removeLocal(${i})" style="flex:1; background:#475569; font-size:10px; color:#f87171; padding:4px;">حذف</button>
+                        </div>
+                    </div>
+                </div>`;
+        });
+    }
+
+    function updateScore(index, val) { localData[index].score += val; renderUI(); }
+    function addNewMakhdoum() {
+        const inp = document.getElementById('nameInp');
+        if(inp.value.trim()) {
+            localData.push({ name: inp.value.trim(), score: 0 });
+            inp.value = "";
+            renderUI();
+        }
+    }
+    function removeLocal(index) { if(confirm("حذف مؤقت؟")) { localData.splice(index, 1); renderUI(); } }
+    function renameMakhdoum(index) {
+        const n = prompt("الاسم الجديد:", localData[index].name);
+        if(n) { localData[index].name = n; renderUI(); }
+    }
+
+    function saveToFirebase() {
+        if(confirm("حفظ جميع التغييرات؟")) {
+            let finalObj = {};
+            localData.forEach(p => {
+                let key = p.id || db.ref("points_data").push().key;
+                finalObj[key] = { name: p.name, score: p.score };
+            });
+            db.ref("points_data").set(finalObj).then(() => alert("✅ تم الحفظ بنجاح"));
+        }
+    }
+
+    function toggleChat() {
+        const status = document.getElementById('chatStatus').innerText === "إيقاف الشات";
+        db.ref("settings").update({ chatEnabled: !status });
+    }
+</script>
+</body>
+</html>
