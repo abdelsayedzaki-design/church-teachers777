@@ -2,12 +2,21 @@
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="لوحة الخدام">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#0f172a">
+    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/4230/4230633.png">
+    <link rel="icon" href="https://cdn-icons-png.flaticon.com/512/4230/4230633.png">
+
     <title>لوحة إدارة إعدادي - الإصدار النهائي</title>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
     <style>
-        body { font-family: 'Segoe UI', sans-serif; background: #0f172a; color: white; margin: 0; padding: 10px; }
+        body { font-family: 'Segoe UI', sans-serif; background: #0f172a; color: white; margin: 0; padding: 10px; -webkit-tap-highlight-color: transparent; }
         #login { position: fixed; inset: 0; background: #1e293b; display: flex; justify-content: center; align-items: center; z-index: 1000; }
         .login-box { background: #334155; padding: 25px; border-radius: 20px; text-align: center; border: 2px solid #6366f1; width: 85%; max-width: 320px; }
         #admin { display: none; max-width: 900px; margin: auto; padding-bottom: 50px; }
@@ -27,7 +36,7 @@
         .plus-minus { display: flex; gap: 4px; margin-bottom: 8px; flex-wrap: wrap; }
         .plus-minus button { flex: 1; padding: 5px; font-weight: bold; font-size: 11px; }
         
-        input, textarea { padding: 10px; border-radius: 8px; border: none; outline: none; background: #0f172a; color: white; width: 100%; box-sizing: border-box; }
+        input, textarea { padding: 10px; border-radius: 8px; border: none; outline: none; background: #0f172a; color: white; width: 100%; box-sizing: border-box; font-size: 16px; }
         .add-area { display: none; background: #334155; padding: 10px; border-radius: 10px; margin-bottom: 15px; gap: 10px; }
         
         .log-box { height: 110px; overflow-y: auto; font-size: 11px; background: #020617; padding: 8px; border-radius: 8px; color: #94a3b8; border: 1px dashed #334155; line-height: 1.6; }
@@ -40,6 +49,7 @@
         .check-area input { width: 18px; height: 18px; cursor: pointer; }
 
         .lib-admin input { margin-bottom: 8px; border: 1px solid #334155; }
+        .status-toggle { display: flex; justify-content: space-between; align-items: center; background: rgba(16, 185, 129, 0.1); padding: 8px; border-radius: 8px; margin-bottom: 10px; border: 1px solid #10b981; }
     </style>
 </head>
 <body>
@@ -75,7 +85,7 @@
 
     <div class="section" style="border-right: 4px solid #22c55e;">
         <div style="display:flex; justify-content:space-between; align-items:center;">
-            <h4 style="margin:0;">💬 دردشة المخدومين (رد الخدام)</h4>
+            <h4 style="margin:0;">💬 دردشة المخدومين</h4>
             <div style="display:flex; gap:5px;">
                 <button id="chatStatusBtn" onclick="toggleChat()" style="font-size:10px; padding:6px 10px; font-weight:bold;"></button>
                 <button onclick="clearChatMessages()" style="background:#ef4444; font-size:10px; padding:6px 10px;">محو الشات 🗑️</button>
@@ -83,7 +93,7 @@
         </div>
         <div id="adminChat" class="chat-area"></div>
         <div style="display:flex; gap:5px; margin-top:10px;">
-            <input type="text" id="adminReplyInp" placeholder="اكتب ردك كخادم هنا..." style="background:#0f172a; border:1px solid #334155;">
+            <input type="text" id="adminReplyInp" placeholder="اكتب ردك كخادم هنا...">
             <button onclick="sendAdminReply()" style="background:#22c55e; padding:0 20px; font-weight:bold;">رد</button>
         </div>
     </div>
@@ -112,6 +122,12 @@
 
     <div class="section lib-admin" style="border: 2px solid #10b981;">
         <h4 style="margin:0 0 10px 0; color:#10b981;">🎥 إدارة مكتبة الميديا</h4>
+        
+        <div class="status-toggle">
+            <span style="font-size:13px; color:#10b981; font-weight:bold;">حالة المكتبة للمخدومين:</span>
+            <button id="libStatusBtn" onclick="toggleLibVisibility()" style="padding:5px 12px; font-size:11px; font-weight:bold;"></button>
+        </div>
+
         <div style="background: rgba(0,0,0,0.1); padding: 10px; border-radius: 8px;">
             <label style="font-size:12px; color:#94a3b8;">رابط لحن الأسبوع:</label>
             <input type="text" id="hymnUrl" placeholder="ضع رابط اليوتيوب هنا">
@@ -122,7 +138,7 @@
             <label style="font-size:12px; color:#94a3b8;">رابط فيديو الدرس:</label>
             <input type="text" id="videoUrl" placeholder="رابط فيديو الدرس">
             
-            <button onclick="updateMediaLinks()" style="background:#10b981; width:100%; padding:12px; font-weight:bold; margin-top:5px; border-radius:8px;">💾 حفظ وتحديث المكتبة للكل</button>
+            <button onclick="updateMediaLinks()" style="background:#10b981; width:100%; padding:12px; font-weight:bold; margin-top:5px; border-radius:8px;">💾 حفظ وتحديث الروابط</button>
         </div>
     </div>
 </div>
@@ -132,16 +148,8 @@
     firebase.initializeApp(config);
     const db = firebase.database();
     
-    const users = {
-        "jesus": "أمين الخدمة",
-        "mikel": "أ/ ميكائيل",
-        "john": "أ/ يوحنا",
-        "servant": "خادم عام"
-    };
-
-    let localData = [];
-    let isEditMode = false;
-    let currentServant = "";
+    const users = { "jesus": "أمين الخدمة", "mikel": "أ/ ميكائيل", "john": "أ/ يوحنا", "servant": "خادم عام" };
+    let localData = []; let isEditMode = false; let currentServant = "";
 
     function checkPass() {
         const input = document.getElementById('passInput').value.trim().toLowerCase();
@@ -170,6 +178,14 @@
             }
         });
 
+        // متابعة حالة إخفاء/إظهار المكتبة
+        db.ref("settings/libVisible").on("value", snap => {
+            const isVisible = snap.val() !== false;
+            const btn = document.getElementById('libStatusBtn');
+            btn.innerText = isVisible ? "ظاهرة الآن ✅" : "مخفية الآن ❌";
+            btn.style.background = isVisible ? "#22c55e" : "#ef4444";
+        });
+
         db.ref("activity_logs").limitToLast(20).on("value", snap => {
             const box = document.getElementById('actionLog'); box.innerHTML = "";
             snap.forEach(l => { box.innerHTML = `<div>${l.val()}</div>` + box.innerHTML; });
@@ -186,7 +202,6 @@
             const box = document.getElementById('adminChat'); box.innerHTML = "";
             snap.forEach(m => { 
                 const sender = m.val().sender;
-                // إذا كان المرسل يحتوي على "أ/" أو "أمين" نلونه بلون مختلف
                 const isServant = sender.includes("أ/") || sender.includes("أمين");
                 const color = isServant ? "#fbbf24" : "#818cf8";
                 box.innerHTML += `<div><b style="color:${color};">${sender}:</b> ${m.val().text}</div>`; 
@@ -197,118 +212,69 @@
         db.ref("psychology/confessions").on("value", snap => {
             const box = document.getElementById('psyList'); box.innerHTML = "";
             snap.forEach(c => {
-                const val = c.val();
-                const key = c.key;
-                box.innerHTML += `
-                    <div class="psy-card ${val.responded ? 'responded-msg' : ''}">
-                        <div class="psy-header">
-                            <b style="color:#f472b6;">${val.sender} [${val.mood || ''}]</b>
-                            <label class="check-area">
-                                <input type="checkbox" ${val.responded ? 'checked' : ''} onchange="togglePsyResponse('${key}', this.checked)">
-                                تم المتابعة
-                            </label>
-                        </div>
-                        <p style="margin:2px 0; font-size:12px; color:#fbbf24;">الاحتياج: ${val.need || 'غير محدد'}</p>
-                        <p style="margin:5px 0; font-size:14px;">${val.text}</p>
-                        <div style="text-align: left; margin-top:5px;">
-                            <button onclick="deletePsyMsg('${key}')" style="background:none; color:#f87171; font-size:10px;">حذف 🗑️</button>
-                        </div>
-                    </div>`;
+                const val = c.val(); const key = c.key;
+                box.innerHTML += `<div class="psy-card ${val.responded ? 'responded-msg' : ''}">
+                    <div class="psy-header"><b style="color:#f472b6;">${val.sender} [${val.mood || ''}]</b>
+                    <label class="check-area"><input type="checkbox" ${val.responded ? 'checked' : ''} onchange="togglePsyResponse('${key}', this.checked)"> تم المتابعة</label></div>
+                    <p style="margin:2px 0; font-size:12px; color:#fbbf24;">الاحتياج: ${val.need || 'غير محدد'}</p>
+                    <p style="margin:5px 0; font-size:14px;">${val.text}</p>
+                    <div style="text-align: left; margin-top:5px;"><button onclick="deletePsyMsg('${key}')" style="background:none; color:#f87171; font-size:10px;">حذف 🗑️</button></div></div>`;
             });
         });
     }
 
     function renderUI() {
-        const list = document.getElementById('leaderboard');
-        list.innerHTML = "";
+        const list = document.getElementById('leaderboard'); list.innerHTML = "";
         localData.sort((a,b) => b.score - a.score).forEach((p) => {
-            list.innerHTML += `
-                <div class="card">
-                    <div style="font-size:11px; font-weight:bold; height:28px; overflow:hidden;">${p.name}</div>
-                    <div style="font-size:22px; font-weight:bold; color:#fbbf24;">${p.score}</div>
-                    <div class="edit-tools" style="display: ${isEditMode ? 'block' : 'none'}">
-                        <div class="plus-minus">
-                            <button onclick="updateScore('${p.id}', 1)" style="background:#475569">+1</button>
-                            <button onclick="updateScore('${p.id}', 5)" style="background:#6366f1">+5</button>
-                            <button onclick="updateScore('${p.id}', -1)" style="background:#ef4444">-1</button>
-                        </div>
-                        <button onclick="deleteMakhdoum('${p.id}', '${p.name}')" style="color:#f87171; background:none; font-size:9px; margin-top:5px;">حذف آمن 🔒</button>
-                    </div>
-                </div>`;
+            list.innerHTML += `<div class="card"><div style="font-size:11px; font-weight:bold; height:28px; overflow:hidden;">${p.name}</div>
+                <div style="font-size:22px; font-weight:bold; color:#fbbf24;">${p.score}</div>
+                <div class="edit-tools" style="display: ${isEditMode ? 'block' : 'none'}"><div class="plus-minus">
+                <button onclick="updateScore('${p.id}', 1)" style="background:#475569">+1</button>
+                <button onclick="updateScore('${p.id}', 5)" style="background:#6366f1">+5</button>
+                <button onclick="updateScore('${p.id}', -1)" style="background:#ef4444">-1</button></div>
+                <button onclick="deleteMakhdoum('${p.id}', '${p.name}')" style="color:#f87171; background:none; font-size:9px; margin-top:5px;">حذف آمن 🔒</button></div></div>`;
         });
     }
 
     function updateScore(id, val) { 
         const makhdoum = localData.find(m => m.id === id);
-        db.ref(`points_data/${id}/score`).transaction((current) => (current || 0) + val);
+        db.ref(`points_data/${id}/score`).transaction(c => (c || 0) + val);
         const time = new Date().toLocaleTimeString('ar-EG', {hour:'2-digit', minute:'2-digit'});
         db.ref("activity_logs").push(`[${time}] ${currentServant}: عدل ${makhdoum.name} (${val>0?'+':''}${val})`);
     }
 
     function addNewMakhdoum() {
-        const inp = document.getElementById('nameInp');
-        const name = inp.value.trim();
-        if(name) {
-            db.ref("points_data").push({ name: name, score: 0 });
-            db.ref("activity_logs").push(`${currentServant} أضاف مخدوم: ${name}`);
-            inp.value = "";
-        }
+        const inp = document.getElementById('nameInp'); const name = inp.value.trim();
+        if(name) { db.ref("points_data").push({ name: name, score: 0 }); db.ref("activity_logs").push(`${currentServant} أضاف مخدوم: ${name}`); inp.value = ""; }
     }
 
     function sendAdminReply() {
-        const inp = document.getElementById('adminReplyInp');
-        const text = inp.value.trim();
-        if(text) {
-            db.ref("chat").push({
-                sender: currentServant, // الاسم يحتوي على اللقب مثل "أ/ ميكائيل"
-                text: text
-            });
-            inp.value = "";
-        }
+        const inp = document.getElementById('adminReplyInp'); const text = inp.value.trim();
+        if(text) { db.ref("chat").push({ sender: currentServant, text: text }); inp.value = ""; }
+    }
+
+    function toggleLibVisibility() {
+        const currentBtnText = document.getElementById('libStatusBtn').innerText;
+        const isNowVisible = currentBtnText.includes("مخفية");
+        db.ref("settings").update({ libVisible: isNowVisible });
+        db.ref("activity_logs").push(`${currentServant} قام بـ ${isNowVisible ? 'إظهار' : 'إخفاء'} المكتبة`);
     }
 
     function updateMediaLinks() {
-        const links = {
-            hymn: document.getElementById('hymnUrl').value,
-            pdf: document.getElementById('pdfUrl').value,
-            video: document.getElementById('videoUrl').value
-        };
-        db.ref("media_library").set(links).then(() => {
-            alert("تم تحديث مكتبة الميديا بنجاح ✅");
-            db.ref("activity_logs").push(`${currentServant} حدث روابط المكتبة`);
-        });
+        const links = { hymn: document.getElementById('hymnUrl').value, pdf: document.getElementById('pdfUrl').value, video: document.getElementById('videoUrl').value };
+        db.ref("media_library").set(links).then(() => { alert("تم التحديث ✅"); });
     }
 
     function deleteMakhdoum(id, name) {
-        const pw = prompt(`⚠️ باسوورد الحذف لـ (${name}):`);
-        if (pw === "jesus 777") {
+        if (prompt(`⚠️ باسوورد الحذف لـ (${name}):`) === "jesus 777") {
             db.ref(`points_data/${id}`).remove();
             db.ref("activity_logs").push(`❌ ${currentServant} حذف: ${name}`);
-        } else if (pw !== null) alert("خطأ!");
+        }
     }
 
-    function togglePsyResponse(key, status) {
-        db.ref(`psychology/confessions/${key}`).update({ responded: status });
-    }
-
-    function deletePsyMsg(key) {
-        const pw = prompt("⚠️ باسوورد حذف رسالة المساندة:");
-        if (pw === "jesus 777") {
-            db.ref(`psychology/confessions/${key}`).remove();
-        } else if (pw !== null) alert("خطأ!");
-    }
-
-    function resetAllScores() {
-        const pw = prompt("⚠️ كلمة سر التصفير:");
-        if (pw === "jesus 777") {
-            if(confirm("تصفير الجميع؟")) {
-                let updates = {};
-                localData.forEach(p => updates[`points_data/${p.id}/score`] = 0);
-                db.ref().update(updates);
-                db.ref("activity_logs").push(`🚨 ${currentServant} صفر العدادات`);
-            }
-        } else if (pw !== null) alert("خطأ!");
-    }
+    function togglePsyResponse(key, status) { db.ref(`psychology/confessions/${key}`).update({ responded: status }); }
+    function deletePsyMsg(key) { if (prompt("⚠️ باسوورد الحذف:") === "jesus 777") db.ref(`psychology/confessions/${key}`).remove(); }
+    function resetAllScores() { if (prompt("⚠️ كلمة السر:") === "jesus 777" && confirm("تصفير الجميع؟")) { let up = {}; localData.forEach(p => up[`points_data/${p.id}/score`] = 0); db.ref().update(up); } }
 
     function toggleEditMode() {
         isEditMode = !isEditMode;
@@ -319,19 +285,17 @@
     }
 
     function searchMakhdoum() {
-        let filter = document.getElementById('searchInput').value.toLowerCase();
-        let cards = document.querySelectorAll('#leaderboard .card');
-        cards.forEach(card => {
-            let name = card.querySelector('div').innerText.toLowerCase();
-            card.style.display = name.includes(filter) ? "" : "none";
+        let f = document.getElementById('searchInput').value.toLowerCase();
+        document.querySelectorAll('#leaderboard .card').forEach(c => {
+            c.style.display = c.querySelector('div').innerText.toLowerCase().includes(f) ? "" : "none";
         });
     }
 
     function clearLog() { if(confirm("مسح السجل؟")) db.ref("activity_logs").remove(); }
     function toggleChat() { db.ref("settings").update({ chatEnabled: !document.getElementById('chatStatusBtn').innerText.includes("إيقاف") }); }
     function clearChatMessages() { if(confirm("مسح؟")) db.ref("chat").remove(); }
-    function sendAlert() { db.ref("admin_announcement").set(document.getElementById('alertContent').value).then(() => alert("تم")); }
-    function clearAlert() { db.ref("admin_announcement").set("").then(() => document.getElementById('alertContent').value = ""); }
+    function sendAlert() { db.ref("admin_announcement").set(document.getElementById('alertContent').value); }
+    function clearAlert() { db.ref("admin_announcement").set(""); document.getElementById('alertContent').value = ""; }
 </script>
 </body>
 </html>
