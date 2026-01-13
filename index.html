@@ -31,7 +31,7 @@
         .add-area { display: none; background: #334155; padding: 10px; border-radius: 10px; margin-bottom: 15px; gap: 10px; }
         
         .log-box { height: 110px; overflow-y: auto; font-size: 11px; background: #020617; padding: 8px; border-radius: 8px; color: #94a3b8; border: 1px dashed #334155; line-height: 1.6; }
-        .chat-area { height: 90px; overflow-y: auto; background: #0f172a; padding: 8px; border-radius: 8px; font-size: 12px; margin-top: 10px; border: 1px solid #334155; }
+        .chat-area { height: 120px; overflow-y: auto; background: #0f172a; padding: 8px; border-radius: 8px; font-size: 12px; margin-top: 10px; border: 1px solid #334155; }
 
         .psy-card { background: #1e293b; padding: 12px; border-radius: 10px; margin-bottom: 10px; border: 1px solid #450a0a; border-right: 5px solid #ef4444; }
         .psy-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #334155; padding-bottom: 5px; margin-bottom: 8px; }
@@ -39,7 +39,6 @@
         .check-area { display: flex; align-items: center; gap: 5px; font-size: 12px; cursor: pointer; }
         .check-area input { width: 18px; height: 18px; cursor: pointer; }
 
-        /* ستايل إدارة المكتبة */
         .lib-admin input { margin-bottom: 8px; border: 1px solid #334155; }
     </style>
 </head>
@@ -76,13 +75,17 @@
 
     <div class="section" style="border-right: 4px solid #22c55e;">
         <div style="display:flex; justify-content:space-between; align-items:center;">
-            <h4 style="margin:0;">💬 دردشة المخدومين</h4>
+            <h4 style="margin:0;">💬 دردشة المخدومين (رد الخدام)</h4>
             <div style="display:flex; gap:5px;">
                 <button id="chatStatusBtn" onclick="toggleChat()" style="font-size:10px; padding:6px 10px; font-weight:bold;"></button>
                 <button onclick="clearChatMessages()" style="background:#ef4444; font-size:10px; padding:6px 10px;">محو الشات 🗑️</button>
             </div>
         </div>
         <div id="adminChat" class="chat-area"></div>
+        <div style="display:flex; gap:5px; margin-top:10px;">
+            <input type="text" id="adminReplyInp" placeholder="اكتب ردك كخادم هنا..." style="background:#0f172a; border:1px solid #334155;">
+            <button onclick="sendAdminReply()" style="background:#22c55e; padding:0 20px; font-weight:bold;">رد</button>
+        </div>
     </div>
 
     <div class="psy-section-red">
@@ -109,21 +112,22 @@
 
     <div class="section lib-admin" style="border: 2px solid #10b981;">
         <h4 style="margin:0 0 10px 0; color:#10b981;">🎥 إدارة مكتبة الميديا</h4>
-        <label style="font-size:12px; color:#94a3b8;">رابط لحن الأسبوع:</label>
-        <input type="text" id="hymnUrl" placeholder="https://youtube.com/...">
-        
-        <label style="font-size:12px; color:#94a3b8;">رابط المنهج (PDF):</label>
-        <input type="text" id="pdfUrl" placeholder="رابط جوجل درايف مثلاً...">
-        
-        <label style="font-size:12px; color:#94a3b8;">رابط فيديو الدرس:</label>
-        <input type="text" id="videoUrl" placeholder="https://youtube.com/...">
-        
-        <button onclick="updateMediaLinks()" style="background:#10b981; width:100%; padding:10px; font-weight:bold; margin-top:5px;">تحديث روابط المكتبة 🔄</button>
+        <div style="background: rgba(0,0,0,0.1); padding: 10px; border-radius: 8px;">
+            <label style="font-size:12px; color:#94a3b8;">رابط لحن الأسبوع:</label>
+            <input type="text" id="hymnUrl" placeholder="ضع رابط اليوتيوب هنا">
+            
+            <label style="font-size:12px; color:#94a3b8;">رابط المنهج (PDF):</label>
+            <input type="text" id="pdfUrl" placeholder="رابط جوجل درايف">
+            
+            <label style="font-size:12px; color:#94a3b8;">رابط فيديو الدرس:</label>
+            <input type="text" id="videoUrl" placeholder="رابط فيديو الدرس">
+            
+            <button onclick="updateMediaLinks()" style="background:#10b981; width:100%; padding:12px; font-weight:bold; margin-top:5px; border-radius:8px;">💾 حفظ وتحديث المكتبة للكل</button>
+        </div>
     </div>
 </div>
 
 <script>
-    // تأكد من تطابق رابط الـ databaseURL مع مشروعك
     const config = { databaseURL: "https://jesus-bb0ba-default-rtdb.firebaseio.com/" };
     firebase.initializeApp(config);
     const db = firebase.database();
@@ -157,7 +161,6 @@
             renderUI();
         });
 
-        // جلب قيم المكتبة الحالية
         db.ref("media_library").on("value", snap => {
             const d = snap.val();
             if(d) {
@@ -181,7 +184,13 @@
 
         db.ref("chat").limitToLast(15).on("value", snap => {
             const box = document.getElementById('adminChat'); box.innerHTML = "";
-            snap.forEach(m => { box.innerHTML += `<div><b style="color:#818cf8;">${m.val().sender}:</b> ${m.val().text}</div>`; });
+            snap.forEach(m => { 
+                const sender = m.val().sender;
+                // إذا كان المرسل يحتوي على "أ/" أو "أمين" نلونه بلون مختلف
+                const isServant = sender.includes("أ/") || sender.includes("أمين");
+                const color = isServant ? "#fbbf24" : "#818cf8";
+                box.innerHTML += `<div><b style="color:${color};">${sender}:</b> ${m.val().text}</div>`; 
+            });
             box.scrollTop = box.scrollHeight;
         });
 
@@ -242,6 +251,18 @@
         if(name) {
             db.ref("points_data").push({ name: name, score: 0 });
             db.ref("activity_logs").push(`${currentServant} أضاف مخدوم: ${name}`);
+            inp.value = "";
+        }
+    }
+
+    function sendAdminReply() {
+        const inp = document.getElementById('adminReplyInp');
+        const text = inp.value.trim();
+        if(text) {
+            db.ref("chat").push({
+                sender: currentServant, // الاسم يحتوي على اللقب مثل "أ/ ميكائيل"
+                text: text
+            });
             inp.value = "";
         }
     }
