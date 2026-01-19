@@ -126,7 +126,7 @@
 
         <div id="viewRes" style="display: none;">
             <div id="resList" style="max-height: 200px; overflow-y: auto; background: #020617; padding: 10px; border-radius: 8px; margin-bottom: 10px;"></div>
-            <button onclick="clearQuiz()" style="background:#ef4444;" class="main-btn">تصفير المسابقة 🗑️</button>
+            <button onclick="confirmClearQuiz()" style="background:#ef4444;" class="main-btn">تصفير المسابقة لبدء واحدة جديدة 🗑️</button>
         </div>
     </div>
     <div class="top-control">
@@ -227,7 +227,7 @@
     }
 
     function startListening() {
-        listenQuizStatus(); // تفعيل استماع المسابقة
+        listenQuizStatus(); 
         db.ref("points_data").on("value", snap => {
             const data = snap.val();
             localData = data ? Object.keys(data).map(k => ({id:k, ...data[k]})) : [];
@@ -323,7 +323,7 @@
         });
     }
 
-    // --- وظائف المسابقة الجديدة ---
+    // --- وظائف المسابقة ---
     function toggleQuizVisibility() {
         db.ref("settings/quizEnabled").once("value", snap => {
             const current = snap.val() || false;
@@ -349,10 +349,11 @@
 
     function switchTab(tab) {
         ['manual', 'net', 'res'].forEach(t => {
-            document.getElementById('view' + t.charAt(0).toUpperCase() + t.slice(1)).style.display = (tab === t) ? 'block' : 'none';
-            document.getElementById('tab' + t.charAt(0).toUpperCase() + t.slice(1)).classList.remove('active-tab');
+            const view = document.getElementById('view' + t.charAt(0).toUpperCase() + t.slice(1));
+            const btn = document.getElementById('tab' + t.charAt(0).toUpperCase() + t.slice(1));
+            if(view) view.style.display = (tab === t) ? 'block' : 'none';
+            if(btn) btn.classList.toggle('active-tab', tab === t);
         });
-        document.getElementById('tab' + tab.charAt(0).toUpperCase() + tab.slice(1)).classList.add('active-tab');
         if(tab === 'res') loadResults();
     }
 
@@ -407,8 +408,19 @@
         });
     }
 
-    function clearQuiz() {
-        if(confirm("سيتم حذف جميع الأسئلة والنتائج الحالية، هل أنت متأكد؟")) db.ref("bible_quiz").remove();
+    // الوظيفة المحدثة للتصفير الآمن
+    function confirmClearQuiz() {
+        if (prompt("⚠️ لتصفير المسابقة بالكامل (الأسئلة والنتائج)، اكتب باسوورد الحذف:") === "jesus 777") {
+            if(confirm("هل أنت متأكد؟ هذا سيحذف كل الأسئلة الحالية ونتائج المخدومين لبدء مسابقة جديدة.")) {
+                db.ref("bible_quiz").remove().then(() => {
+                    alert("تم تصفير المسابقة بنجاح 🗑️");
+                    db.ref("activity_logs").push(`🗑️ ${currentServant} قام بتصفير مسابقة الكتاب المقدس`);
+                    loadResults(); 
+                });
+            }
+        } else {
+            alert("باسوورد خطأ!");
+        }
     }
     // --- نهاية وظائف المسابقة ---
 
