@@ -338,7 +338,7 @@
         });
     }
 
-    // --- وظائف المسابقة ---
+    // --- وظائف المسابقة المعدلة لضمان العرض المتتالي ---
     function saveQuizTimer() {
         const val = document.getElementById('quizTimerInp').value;
         if(val && val > 0) {
@@ -391,25 +391,36 @@
     function saveManualQuestion() {
         const type = document.getElementById('qType').value;
         const qText = document.getElementById('mQuestion').value.trim();
-        const qPoints = document.getElementById('mPoints').value.trim() || 1; // القيمة الافتراضية 1
+        const qPoints = document.getElementById('mPoints').value.trim() || 1;
         
         if(!qText) return alert("اكتب السؤال أولاً");
         
-        let data = { text: qText, type: type, points: parseInt(qPoints) };
+        let data = { 
+            text: qText, 
+            type: type, 
+            points: parseInt(qPoints),
+            options: [] // تهيئة المصفوفة لتجنب الأخطاء
+        };
         
         if(type === 'choice') {
-            const opts = [document.getElementById('opt0').value, document.getElementById('opt1').value, document.getElementById('opt2').value, document.getElementById('opt3').value];
+            const opts = [
+                document.getElementById('opt0').value.trim(), 
+                document.getElementById('opt1').value.trim(), 
+                document.getElementById('opt2').value.trim(), 
+                document.getElementById('opt3').value.trim()
+            ];
             data.options = opts;
             data.correctAnswer = opts[document.querySelector('input[name="correctRadio"]:checked').value];
         } else if(type === 'truefalse') {
             data.options = ["صح", "خطأ"];
             data.correctAnswer = document.querySelector('input[name="tfRadio"]:checked').value;
         } else {
-            data.correctAnswer = document.getElementById('manualAns').value;
+            data.options = [""]; // قيمة وهمية لمنع التوقف
+            data.correctAnswer = document.getElementById('manualAns').value.trim();
         }
         
         db.ref("bible_quiz/questions").push(data).then(() => {
-            alert(`تم حفظ السؤال بنجاح (${qPoints} نقاط) ✅`);
+            alert(`تم حفظ السؤال بنجاح ✅`);
             document.getElementById('mQuestion').value = "";
             document.getElementById('mPoints').value = "";
         });
@@ -420,16 +431,13 @@
         if(!input) return;
         input.split('\n').forEach(line => {
             if(line.includes('|')) {
-                const p = line.split('|');
-                const text = p[0].trim();
-                const ans = p[1].trim();
-                const pts = p[2] ? parseInt(p[2].trim()) : 1; // إذا لم يحدد نقاط، نعتبرها 1
-                
+                const parts = line.split('|');
                 db.ref("bible_quiz/questions").push({ 
-                    text: text, 
-                    correctAnswer: ans, 
+                    text: parts[0].trim(), 
+                    correctAnswer: parts[1].trim(), 
                     type: "text", 
-                    points: pts 
+                    options: [""],
+                    points: parts[2] ? parseInt(parts[2].trim()) : 1 
                 });
             }
         });
@@ -460,8 +468,8 @@
             alert("باسوورد خطأ!");
         }
     }
-    // --- نهاية وظائف المسابقة ---
 
+    // --- وظائف عامة ---
     function replyPsy(sid) {
         const inp = document.getElementById('rep_' + sid);
         if(inp.value.trim()) {
@@ -506,7 +514,6 @@
         const currentBtnText = document.getElementById('libStatusBtn').innerText;
         const isNowVisible = currentBtnText.includes("مخفية");
         db.ref("settings").update({ libVisible: isNowVisible });
-        db.ref("activity_logs").push(`${currentServant} قام بـ ${isNowVisible ? 'إظهار' : 'إخفاء'} المكتبة`);
     }
 
     function updateMediaLinks() {
@@ -517,7 +524,6 @@
     function deleteMakhdoum(id, name) {
         if (prompt(`⚠️ باسوورد الحذف لـ (${name}):`) === "jesus 777") {
             db.ref(`points_data/${id}`).remove();
-            db.ref("activity_logs").push(`❌ ${currentServant} حذف: ${name}`);
         }
     }
 
