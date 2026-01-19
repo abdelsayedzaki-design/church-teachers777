@@ -108,6 +108,8 @@
             </select>
             <input type="text" id="mQuestion" placeholder="نص السؤال">
             
+            <input type="number" id="mPoints" placeholder="عدد النقاط لهذا السؤال (مثال: 5)" style="border: 1px solid #fbbf24; background: #1e293b;">
+
             <div id="choiceArea">
                 <div class="opt-row"><input type="radio" name="correctRadio" value="0" checked><input type="text" id="opt0" placeholder="خيار 1"></div>
                 <div class="opt-row"><input type="radio" name="correctRadio" value="1"><input type="text" id="opt1" placeholder="خيار 2"></div>
@@ -128,7 +130,7 @@
         </div>
 
         <div id="viewNet" style="display: none;">
-            <textarea id="bulkInput" rows="5" placeholder="السؤال | الإجابة (مثال: من هو أول الشهداء؟ | استفانوس)"></textarea>
+            <textarea id="bulkInput" rows="5" placeholder="السؤال | الإجابة | النقاط (مثال: من هو أول الشهداء؟ | استفانوس | 5)"></textarea>
             <button onclick="saveBulkNet()" class="main-btn" style="background: #6366f1; margin-top: 10px;">إضافة دفعة واحدة 🚀</button>
         </div>
 
@@ -237,7 +239,6 @@
     function startListening() {
         listenQuizStatus(); 
         
-        // جلب وقت المسابقة من الداتا بيز
         db.ref("settings/quizTimer").on("value", snap => {
             if(snap.exists()) document.getElementById('quizTimerInp').value = snap.val();
         });
@@ -390,8 +391,12 @@
     function saveManualQuestion() {
         const type = document.getElementById('qType').value;
         const qText = document.getElementById('mQuestion').value.trim();
+        const qPoints = document.getElementById('mPoints').value.trim() || 1; // القيمة الافتراضية 1
+        
         if(!qText) return alert("اكتب السؤال أولاً");
-        let data = { text: qText, type: type };
+        
+        let data = { text: qText, type: type, points: parseInt(qPoints) };
+        
         if(type === 'choice') {
             const opts = [document.getElementById('opt0').value, document.getElementById('opt1').value, document.getElementById('opt2').value, document.getElementById('opt3').value];
             data.options = opts;
@@ -402,9 +407,11 @@
         } else {
             data.correctAnswer = document.getElementById('manualAns').value;
         }
+        
         db.ref("bible_quiz/questions").push(data).then(() => {
-            alert("تم حفظ السؤال ✅");
+            alert(`تم حفظ السؤال بنجاح (${qPoints} نقاط) ✅`);
             document.getElementById('mQuestion').value = "";
+            document.getElementById('mPoints').value = "";
         });
     }
 
@@ -414,10 +421,19 @@
         input.split('\n').forEach(line => {
             if(line.includes('|')) {
                 const p = line.split('|');
-                db.ref("bible_quiz/questions").push({ text: p[0].trim(), correctAnswer: p[1].trim(), type: "text" });
+                const text = p[0].trim();
+                const ans = p[1].trim();
+                const pts = p[2] ? parseInt(p[2].trim()) : 1; // إذا لم يحدد نقاط، نعتبرها 1
+                
+                db.ref("bible_quiz/questions").push({ 
+                    text: text, 
+                    correctAnswer: ans, 
+                    type: "text", 
+                    points: pts 
+                });
             }
         });
-        alert("تمت الإضافة بنجاح 🚀");
+        alert("تمت إضافة الأسئلة بنجاح 🚀");
         document.getElementById('bulkInput').value = "";
     }
 
