@@ -62,6 +62,9 @@
         /* تسيق قسم تقارير الصلاة الجديد */
         .prayer-report-card { background: #0f172a; padding: 12px; border-radius: 10px; margin-bottom: 10px; border-right: 5px solid #fbbf24; font-size: 13px; }
         .duration-badge { background: #fbbf24; color: #0f172a; padding: 2px 8px; border-radius: 5px; font-weight: bold; float: left; }
+
+        /* ستايل جديد لقسم التحكم المضاف */
+        .feature-control { background: #1e293b; border: 2px solid #6366f1; border-radius: 15px; padding: 15px; margin-bottom: 20px; }
     </style>
 </head>
 <body>
@@ -78,6 +81,28 @@
     <div style="text-align: center; margin-bottom: 15px;">
         <h3 style="margin:0; color:#818cf8;">إدارة خدمة إعدادي</h3>
         <small id="welcomeServant" style="color: #fbbf24; font-weight: bold;"></small>
+    </div>
+
+    <div class="feature-control">
+        <h4 style="margin:0 0 10px 0; color:#6366f1; text-align:center;">🌟 إدارة شريط الأخبار والأبطال</h4>
+        
+        <div style="background: rgba(99, 102, 241, 0.1); padding: 10px; border-radius: 10px; margin-bottom: 10px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
+                <span style="font-size:13px;">شريط الأخبار المتحرك:</span>
+                <button id="marqueeToggle" onclick="toggleMarquee()" style="padding:5px 10px; font-size:11px; background:#ef4444;">مغلق ❌</button>
+            </div>
+            <input type="text" id="marqueeTextInp" placeholder="اكتب خبر الشريط المتحرك هنا..." style="font-size:13px; background:#0f172a;">
+            <button onclick="saveMarqueeText()" style="background:#6366f1; width:100%; padding:8px; font-size:12px; margin-top:5px;">حفظ نص الشريط 💾</button>
+        </div>
+
+        <div style="background: rgba(251, 191, 36, 0.1); padding: 10px; border-radius: 10px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
+                <span style="font-size:13px; color:#fbbf24;">لوحة أبطال الأسبوع:</span>
+                <button id="heroesToggle" onclick="toggleHeroes()" style="padding:5px 10px; font-size:11px; background:#ef4444;">مخفية ❌</button>
+            </div>
+            <input type="text" id="heroesNamesInp" placeholder="أسماء الأبطال (مثال: أبانوب - يوحنا)" style="font-size:13px; background:#0f172a;">
+            <button onclick="saveHeroesNames()" style="background:#fbbf24; color:#0f172a; width:100%; padding:8px; font-size:12px; margin-top:5px; font-weight:bold;">تحديث أسماء الأبطال 👑</button>
+        </div>
     </div>
 
     <div class="section" style="border: 2px solid #fbbf24; display: flex; justify-content: space-between; align-items: center; background: rgba(251, 191, 36, 0.1);">
@@ -289,9 +314,58 @@
             document.getElementById('welcomeServant').innerText = "أهلاً يا " + currentServant;
             startListening();
             loadCurrentHints(); 
-            listenToPrayerReports(); // وظيفة استماع لتقارير الصلاة الجديدة
+            listenToPrayerReports(); 
+            listenNewFeatures(); // وظيفة الاستماع للميزات الجديدة
         } else { alert("كلمة السر خطأ!"); }
     }
+
+    // --- وظائف الميزات الجديدة (الشريط المتحرك والأبطال) ---
+    function listenNewFeatures() {
+        // الاستماع لحالة ونص شريط الأخبار
+        db.ref("settings/marqueeEnabled").on("value", snap => {
+            const isEnabled = snap.val() === true;
+            const btn = document.getElementById('marqueeToggle');
+            btn.innerText = isEnabled ? "مفتوح ✅" : "مغلق ❌";
+            btn.style.background = isEnabled ? "#22c55e" : "#ef4444";
+        });
+        db.ref("settings/marqueeText").on("value", snap => {
+            document.getElementById('marqueeTextInp').value = snap.val() || "";
+        });
+
+        // الاستماع لحالة وأسماء الأبطال
+        db.ref("settings/heroesVisible").on("value", snap => {
+            const isVisible = snap.val() === true;
+            const btn = document.getElementById('heroesToggle');
+            btn.innerText = isVisible ? "ظاهرة ✅" : "مخفية ❌";
+            btn.style.background = isVisible ? "#22c55e" : "#ef4444";
+        });
+        db.ref("settings/heroesNames").on("value", snap => {
+            document.getElementById('heroesNamesInp').value = snap.val() || "";
+        });
+    }
+
+    function toggleMarquee() {
+        db.ref("settings/marqueeEnabled").once("value", snap => {
+            db.ref("settings/marqueeEnabled").set(!(snap.val() === true));
+        });
+    }
+
+    function saveMarqueeText() {
+        const txt = document.getElementById('marqueeTextInp').value;
+        db.ref("settings/marqueeText").set(txt).then(() => alert("تم تحديث شريط الأخبار ✅"));
+    }
+
+    function toggleHeroes() {
+        db.ref("settings/heroesVisible").once("value", snap => {
+            db.ref("settings/heroesVisible").set(!(snap.val() === true));
+        });
+    }
+
+    function saveHeroesNames() {
+        const names = document.getElementById('heroesNamesInp').value;
+        db.ref("settings/heroesNames").set(names).then(() => alert("تم تحديث قائمة الأبطال ✅"));
+    }
+    // ----------------------------------------------------
 
     function startListening() {
         listenQuizStatus(); 
@@ -395,7 +469,6 @@
         });
     }
 
-    // --- وظائف استلام تقارير الصلاة الجديدة ---
     function listenToPrayerReports() {
         db.ref("prayer_reports").on("value", snap => {
             const box = document.getElementById('prayerReportsList');
@@ -429,14 +502,11 @@
         }
     }
 
-    // --- وظائف المسابقة (لم يتم تغييرها) ---
     function saveQuizTimer() {
         const val = document.getElementById('quizTimerInp').value;
         if(val && val > 0) {
             db.ref("settings/quizTimer").set(parseInt(val)).then(() => alert("تم حفظ الوقت: " + val + " دقائق ⏱️"));
-        } else {
-            alert("يرجى إدخال وقت صحيح");
-        }
+        } else { alert("يرجى إدخال وقت صحيح"); }
     }
 
     function toggleQuizVisibility() {
@@ -483,38 +553,15 @@
         const type = document.getElementById('qType').value;
         const qText = document.getElementById('mQuestion').value.trim();
         const qPoints = document.getElementById('mPoints').value.trim() || 1;
-        
         if(!qText) return alert("اكتب السؤال أولاً");
-        
-        let data = { 
-            text: qText, 
-            type: type, 
-            points: parseInt(qPoints),
-            options: [] 
-        };
-        
+        let data = { text: qText, type: type, points: parseInt(qPoints), options: [] };
         if(type === 'choice') {
-            const opts = [
-                document.getElementById('opt0').value.trim(), 
-                document.getElementById('opt1').value.trim(), 
-                document.getElementById('opt2').value.trim(), 
-                document.getElementById('opt3').value.trim()
-            ];
-            data.options = opts;
-            data.correctAnswer = opts[document.querySelector('input[name="correctRadio"]:checked').value];
+            const opts = [ document.getElementById('opt0').value.trim(), document.getElementById('opt1').value.trim(), document.getElementById('opt2').value.trim(), document.getElementById('opt3').value.trim() ];
+            data.options = opts; data.correctAnswer = opts[document.querySelector('input[name="correctRadio"]:checked').value];
         } else if(type === 'truefalse') {
-            data.options = ["صح", "خطأ"];
-            data.correctAnswer = document.querySelector('input[name="tfRadio"]:checked').value;
-        } else {
-            data.options = [""]; 
-            data.correctAnswer = document.getElementById('manualAns').value.trim();
-        }
-        
-        db.ref("bible_quiz/questions").push(data).then(() => {
-            alert(`تم حفظ السؤال بنجاح ✅`);
-            document.getElementById('mQuestion').value = "";
-            document.getElementById('mPoints').value = "";
-        });
+            data.options = ["صح", "خطأ"]; data.correctAnswer = document.querySelector('input[name="tfRadio"]:checked').value;
+        } else { data.options = [""]; data.correctAnswer = document.getElementById('manualAns').value.trim(); }
+        db.ref("bible_quiz/questions").push(data).then(() => { alert(`تم حفظ السؤال بنجاح ✅`); document.getElementById('mQuestion').value = ""; document.getElementById('mPoints').value = ""; });
     }
 
     function saveBulkNet() {
@@ -523,85 +570,43 @@
         input.split('\n').forEach(line => {
             if(line.includes('|')) {
                 const parts = line.split('|');
-                db.ref("bible_quiz/questions").push({ 
-                    text: parts[0].trim(), 
-                    correctAnswer: parts[1].trim(), 
-                    type: "text", 
-                    options: [""],
-                    points: parts[2] ? parseInt(parts[2].trim()) : 1 
-                });
+                db.ref("bible_quiz/questions").push({ text: parts[0].trim(), correctAnswer: parts[1].trim(), type: "text", options: [""], points: parts[2] ? parseInt(parts[2].trim()) : 1 });
             }
         });
-        alert("تمت إضافة الأسئلة بنجاح 🚀");
-        document.getElementById('bulkInput').value = "";
+        alert("تمت إضافة الأسئلة بنجاح 🚀"); document.getElementById('bulkInput').value = "";
     }
 
     function loadResults() {
         db.ref("bible_quiz/submissions").once("value", snap => {
             const list = document.getElementById('resList'); list.innerHTML = "";
             if(!snap.exists()) { list.innerHTML = "لا توجد نتائج بعد"; return; }
-            snap.forEach(c => {
-                list.innerHTML += `<div style="padding: 5px; border-bottom: 1px solid #334155;">👤 ${c.val().userName}: <span style="color:#fbbf24">${c.val().score} درجة</span></div>`;
-            });
+            snap.forEach(c => { list.innerHTML += `<div style="padding: 5px; border-bottom: 1px solid #334155;">👤 ${c.val().userName}: <span style="color:#fbbf24">${c.val().score} درجة</span></div>`; });
         });
     }
 
     function confirmClearQuiz() {
-        if (prompt("⚠️ لتصفير المسابقة بالكامل (الأسئلة والنتائج)، اكتب باسوورد الحذف:") === "jesus 777") {
-            if(confirm("هل أنت متأكد؟ هذا سيحذف كل الأسئلة الحالية ونتائج المخدومين لبدء مسابقة جديدة.")) {
-                db.ref("bible_quiz").remove().then(() => {
-                    alert("تم تصفير المسابقة بنجاح 🗑️");
-                    db.ref("activity_logs").push(`🗑️ ${currentServant} قام بتصفير مسابقة الكتاب المقدس`);
-                    loadResults(); 
-                });
+        if (prompt("⚠️ لتصفير المسابقة بالكامل، اكتب باسوورد الحذف:") === "jesus 777") {
+            if(confirm("هل أنت متأكد؟")) {
+                db.ref("bible_quiz").remove().then(() => { alert("تم تصفير المسابقة بنجاح 🗑️"); db.ref("activity_logs").push(`🗑️ ${currentServant} قام بتصفير مسابقة الكتاب المقدس`); loadResults(); });
             }
-        } else {
-            alert("باسوورد خطأ!");
-        }
+        } else { alert("باسوورد خطأ!"); }
     }
 
-    // --- وظائف إرشادات الصلاة ---
     function updatePrayerHints() {
-        const hints = {
-            agpeya: document.getElementById('adm_agpeya').value,
-            thanks: document.getElementById('adm_thanks').value,
-            forgive: document.getElementById('adm_forgive').value,
-            heart: document.getElementById('adm_heart').value,
-            union: document.getElementById('adm_union').value,
-            verse: document.getElementById('adm_verse').value
-        };
-
-        db.ref("admin_prayer_hints").set(hints)
-        .then(() => {
-            alert("تم تحديث إرشادات الصلاة بنجاح! ستظهر الآن لكل المخدومين ❤️");
-        })
-        .catch((error) => {
-            alert("حدث خطأ أثناء التحديث");
-            console.error(error);
-        });
+        const hints = { agpeya: document.getElementById('adm_agpeya').value, thanks: document.getElementById('adm_thanks').value, forgive: document.getElementById('adm_forgive').value, heart: document.getElementById('adm_heart').value, union: document.getElementById('adm_union').value, verse: document.getElementById('adm_verse').value };
+        db.ref("admin_prayer_hints").set(hints).then(() => { alert("تم تحديث إرشادات الصلاة بنجاح! ❤️"); });
     }
 
     function loadCurrentHints() {
         db.ref("admin_prayer_hints").once("value", (snapshot) => {
             const data = snapshot.val();
-            if(data) {
-                document.getElementById('adm_agpeya').value = data.agpeya || "";
-                document.getElementById('adm_thanks').value = data.thanks || "";
-                document.getElementById('adm_forgive').value = data.forgive || "";
-                document.getElementById('adm_heart').value = data.heart || "";
-                document.getElementById('adm_union').value = data.union || "";
-                document.getElementById('adm_verse').value = data.verse || "";
-            }
+            if(data) { document.getElementById('adm_agpeya').value = data.agpeya || ""; document.getElementById('adm_thanks').value = data.thanks || ""; document.getElementById('adm_forgive').value = data.forgive || ""; document.getElementById('adm_heart').value = data.heart || ""; document.getElementById('adm_union').value = data.union || ""; document.getElementById('adm_verse').value = data.verse || ""; }
         });
     }
 
-    // --- وظائف عامة ---
     function replyPsy(sid) {
         const inp = document.getElementById('rep_' + sid);
-        if(inp.value.trim()) {
-            db.ref("psychology/private_chats/" + sid).push({ sender: "الخادم (" + currentServant + ")", text: inp.value.trim() });
-            inp.value = "";
-        }
+        if(inp.value.trim()) { db.ref("psychology/private_chats/" + sid).push({ sender: "الخادم (" + currentServant + ")", text: inp.value.trim() }); inp.value = ""; }
     }
     
     function delPsyChat(sid) { if(confirm("حذف المحادثة؟")) db.ref("psychology/private_chats/" + sid).remove(); }
@@ -647,12 +652,7 @@
         db.ref("media_library").set(links).then(() => { alert("تم التحديث ✅"); });
     }
 
-    function deleteMakhdoum(id, name) {
-        if (prompt(`⚠️ باسوورد الحذف لـ (${name}):`) === "jesus 777") {
-            db.ref(`points_data/${id}`).remove();
-        }
-    }
-
+    function deleteMakhdoum(id, name) { if (prompt(`⚠️ باسوورد الحذف لـ (${name}):`) === "jesus 777") db.ref(`points_data/${id}`).remove(); }
     function togglePsyResponse(key, status) { db.ref(`psychology/confessions/${key}`).update({ responded: status }); }
     function deletePsyMsg(key) { if (prompt("⚠️ باسوورد الحذف:") === "jesus 777") db.ref(`psychology/confessions/${key}`).remove(); }
     function resetAllScores() { if (prompt("⚠️ كلمة السر:") === "jesus 777" && confirm("تصفير الجميع؟")) { let up = {}; localData.forEach(p => up[`points_data/${p.id}/score`] = 0); db.ref().update(up); } }
@@ -667,9 +667,7 @@
 
     function searchMakhdoum() {
         let f = document.getElementById('searchInput').value.toLowerCase();
-        document.querySelectorAll('#leaderboard .card').forEach(c => {
-            c.style.display = c.querySelector('div').innerText.toLowerCase().includes(f) ? "" : "none";
-        });
+        document.querySelectorAll('#leaderboard .card').forEach(c => { c.style.display = c.querySelector('div').innerText.toLowerCase().includes(f) ? "" : "none"; });
     }
 
     function clearLog() { if(confirm("مسح السجل؟")) db.ref("activity_logs").remove(); }
