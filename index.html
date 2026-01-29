@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
@@ -52,7 +51,6 @@
         .lib-admin input { margin-bottom: 8px; border: 1px solid #334155; }
         .status-toggle { display: flex; justify-content: space-between; align-items: center; background: rgba(16, 185, 129, 0.1); padding: 8px; border-radius: 8px; margin-bottom: 10px; border: 1px solid #10b981; }
 
-        /* Quiz Specific Styles */
         .quiz-card { border: 2px solid #fbbf24; border-right: 8px solid #fbbf24; display: none; }
         .tab-container { display: flex; gap: 5px; margin-bottom: 15px; }
         .tab-btn { flex: 1; padding: 12px; border-radius: 8px; border: none; cursor: pointer; background: #334155; color: white; font-weight: bold; font-size: 13px; }
@@ -60,7 +58,6 @@
         .opt-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; background: rgba(255,255,255,0.05); padding: 8px; border-radius: 8px; }
         button.main-btn { width: 100%; padding: 15px; border-radius: 10px; border: none; font-weight: bold; font-size: 16px; cursor: pointer; color: white; }
 
-        /* تسيق قسم تقارير الصلاة الجديد */
         .prayer-report-card { background: #0f172a; padding: 12px; border-radius: 10px; margin-bottom: 10px; border-right: 5px solid #fbbf24; font-size: 13px; }
         .duration-badge { background: #fbbf24; color: #0f172a; padding: 2px 8px; border-radius: 5px; font-weight: bold; float: left; }
     </style>
@@ -109,7 +106,8 @@
             <select id="qType" onchange="toggleManualFields()">
                 <option value="choice">اختيار من متعدد</option>
                 <option value="truefalse">صح أم خطأ</option>
-                <option value="text">أكمل</option>
+                <option value="text">أكمل (نص قصير)</option>
+                <option value="essay">سؤال مقالي (شرح)</option>
             </select>
             <input type="text" id="mQuestion" placeholder="نص السؤال">
             
@@ -128,7 +126,7 @@
             </div>
 
             <div id="textOnlyArea" style="display:none;">
-                <input type="text" id="manualAns" placeholder="الإجابة الصحيحة">
+                <input type="text" id="manualAns" placeholder="الإجابة الصحيحة (اترك فارغاً للمقالي)">
             </div>
 
             <button onclick="saveManualQuestion()" class="main-btn" style="background: #22c55e;">حفظ السؤال ✅</button>
@@ -144,6 +142,7 @@
             <button onclick="confirmClearQuiz()" style="background:#ef4444;" class="main-btn">تصفير المسابقة لبدء واحدة جديدة 🗑️</button>
         </div>
     </div>
+
     <div class="top-control">
         <button id="modeBtn" onclick="toggleEditMode()" class="btn-edit-mode">📝 وضع التعديل</button>
         <button id="resetBtn" onclick="resetAllScores()" class="btn-reset">🔄 تصفير الكل</button>
@@ -236,40 +235,14 @@
         <p style="text-align: center; font-size: 13px; color: #cbd5e1;">النصوص التي ستكتبها هنا ستظهر للمخدومين تحت كل بند لتوجيههم في الصلاة.</p>
 
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
-            <div>
-                <label style="display:block; margin-bottom:5px; color:#fbbf24;">📖 إرشاد الأجبية:</label>
-                <input type="text" id="adm_agpeya" placeholder="مثلاً: صلوا مزمور 50..." style="width:100%; padding:10px; border-radius:8px; border:1px solid #334155; background:#0f172a; color:white;">
-            </div>
-
-            <div>
-                <label style="display:block; margin-bottom:5px; color:#fbbf24;">🕊️ إرشاد الشكر:</label>
-                <input type="text" id="adm_thanks" placeholder="مثلاً: نشكر الله على ستره..." style="width:100%; padding:10px; border-radius:8px; border:1px solid #334155; background:#0f172a; color:white;">
-            </div>
-
-            <div>
-                <label style="display:block; margin-bottom:5px; color:#fbbf24;">🙏 إرشاد المغفرة:</label>
-                <input type="text" id="adm_forgive" placeholder="مثلاً: نطلب توبة عن خطايانا..." style="width:100%; padding:10px; border-radius:8px; border:1px solid #334155; background:#0f172a; color:white;">
-            </div>
-
-            <div>
-                <label style="display:block; margin-bottom:5px; color:#fbbf24;">❤️ إرشاد القلب الملتهب:</label>
-                <input type="text" id="adm_heart" placeholder="مثلاً: اطلب نار الحب الإلهي..." style="width:100%; padding:10px; border-radius:8px; border:1px solid #334155; background:#0f172a; color:white;">
-            </div>
-
-            <div>
-                <label style="display:block; margin-bottom:5px; color:#fbbf24;">🔗 إرشاد الاتحاد بالرب:</label>
-                <input type="text" id="adm_union" placeholder="مثلاً: يارب ثبتنا فيك..." style="width:100%; padding:10px; border-radius:8px; border:1px solid #334155; background:#0f172a; color:white;">
-            </div>
-
-            <div>
-                <label style="display:block; margin-bottom:5px; color:#fbbf24;">📜 إرشاد آية اليوم:</label>
-                <input type="text" id="adm_verse" placeholder="مثلاً: شاركنا آية تعزيتك..." style="width:100%; padding:10px; border-radius:8px; border:1px solid #334155; background:#0f172a; color:white;">
-            </div>
+            <div><label style="display:block; margin-bottom:5px; color:#fbbf24;">📖 إرشاد الأجبية:</label><input type="text" id="adm_agpeya" style="width:100%; padding:10px; border-radius:8px; border:1px solid #334155; background:#0f172a; color:white;"></div>
+            <div><label style="display:block; margin-bottom:5px; color:#fbbf24;">🕊️ إرشاد الشكر:</label><input type="text" id="adm_thanks" style="width:100%; padding:10px; border-radius:8px; border:1px solid #334155; background:#0f172a; color:white;"></div>
+            <div><label style="display:block; margin-bottom:5px; color:#fbbf24;">🙏 إرشاد المغفرة:</label><input type="text" id="adm_forgive" style="width:100%; padding:10px; border-radius:8px; border:1px solid #334155; background:#0f172a; color:white;"></div>
+            <div><label style="display:block; margin-bottom:5px; color:#fbbf24;">❤️ إرشاد القلب الملتهب:</label><input type="text" id="adm_heart" style="width:100%; padding:10px; border-radius:8px; border:1px solid #334155; background:#0f172a; color:white;"></div>
+            <div><label style="display:block; margin-bottom:5px; color:#fbbf24;">🔗 إرشاد الاتحاد بالرب:</label><input type="text" id="adm_union" style="width:100%; padding:10px; border-radius:8px; border:1px solid #334155; background:#0f172a; color:white;"></div>
+            <div><label style="display:block; margin-bottom:5px; color:#fbbf24;">📜 إرشاد آية اليوم:</label><input type="text" id="adm_verse" style="width:100%; padding:10px; border-radius:8px; border:1px solid #334155; background:#0f172a; color:white;"></div>
         </div>
-
-        <button onclick="updatePrayerHints()" style="width: 100%; margin-top: 20px; padding: 15px; background: #4ade80; color: #0f172a; border: none; border-radius: 10px; font-weight: bold; cursor: pointer; font-size: 16px;">
-            تحديث الإرشادات عند المخدومين الآن 🚀
-        </button>
+        <button onclick="updatePrayerHints()" style="width: 100%; margin-top: 20px; padding: 15px; background: #4ade80; color: #0f172a; border: none; border-radius: 10px; font-weight: bold; cursor: pointer; font-size: 16px;">تحديث الإرشادات عند المخدومين الآن 🚀</button>
     </div>
 </div>
 
@@ -290,23 +263,18 @@
             document.getElementById('welcomeServant').innerText = "أهلاً يا " + currentServant;
             startListening();
             loadCurrentHints(); 
-            listenToPrayerReports(); // وظيفة استماع لتقارير الصلاة الجديدة
+            listenToPrayerReports();
         } else { alert("كلمة السر خطأ!"); }
     }
 
     function startListening() {
         listenQuizStatus(); 
-        
-        db.ref("settings/quizTimer").on("value", snap => {
-            if(snap.exists()) document.getElementById('quizTimerInp').value = snap.val();
-        });
-
+        db.ref("settings/quizTimer").on("value", snap => { if(snap.exists()) document.getElementById('quizTimerInp').value = snap.val(); });
         db.ref("points_data").on("value", snap => {
             const data = snap.val();
             localData = data ? Object.keys(data).map(k => ({id:k, ...data[k]})) : [];
             renderUI();
         });
-
         db.ref("media_library").on("value", snap => {
             const d = snap.val();
             if(d) {
@@ -315,26 +283,22 @@
                 document.getElementById('videoUrl').value = d.video || "";
             }
         });
-
         db.ref("settings/libVisible").on("value", snap => {
             const isVisible = snap.val() !== false;
             const btn = document.getElementById('libStatusBtn');
             btn.innerText = isVisible ? "ظاهرة الآن ✅" : "مخفية الآن ❌";
             btn.style.background = isVisible ? "#22c55e" : "#ef4444";
         });
-
         db.ref("activity_logs").limitToLast(20).on("value", snap => {
             const box = document.getElementById('actionLog'); box.innerHTML = "";
             snap.forEach(l => { box.innerHTML = `<div>${l.val()}</div>` + box.innerHTML; });
         });
-
         db.ref("settings/chatEnabled").on("value", snap => {
             const status = snap.val() !== false;
             const btn = document.getElementById('chatStatusBtn');
             btn.innerText = status ? "إيقاف الدردشة 🔴" : "فتح الدردشة 🟢";
             btn.style.background = status ? "#ef4444" : "#22c55e";
         });
-
         db.ref("chat").limitToLast(15).on("value", snap => {
             const box = document.getElementById('adminChat'); box.innerHTML = "";
             snap.forEach(m => { 
@@ -345,7 +309,6 @@
             });
             box.scrollTop = box.scrollHeight;
         });
-
         db.ref("psychology/confessions").on("value", snap => {
             const box = document.getElementById('psyList'); box.innerHTML = "";
             snap.forEach(c => {
@@ -358,117 +321,62 @@
                     <div style="text-align: left; margin-top:5px;"><button onclick="deletePsyMsg('${key}')" style="background:none; color:#f87171; font-size:10px;">حذف 🗑️</button></div></div>`;
             });
         });
-
         db.ref("psychology/private_chats").on("value", snap => {
-            const box = document.getElementById('adminPsyChats');
-            box.innerHTML = "";
+            const box = document.getElementById('adminPsyChats'); box.innerHTML = "";
             const data = snap.val();
-            if(!data) {
-                box.innerHTML = "<p style='text-align:center; color:gray; font-size:12px;'>لا يوجد محادثات نشطة</p>";
-                return;
-            }
-
+            if(!data) { box.innerHTML = "<p style='text-align:center; color:gray; font-size:12px;'>لا يوجد محادثات نشطة</p>"; return; }
             Object.keys(data).forEach(sid => {
                 const messages = data[sid];
                 let sHtml = `<div style="background:#1e293b; padding:10px; border-radius:10px; margin-bottom:10px; border:1px solid #ef4444;">
                     <small style="color:#94a3b8; display:block; margin-bottom:5px;">الجلسة: ${sid}</small>
                     <div id="chatbox_${sid}" style="max-height:100px; overflow-y:auto; margin-bottom:8px; background:rgba(0,0,0,0.2); padding:5px; border-radius:5px;">`;
-                
                 Object.values(messages).forEach(m => {
                     const isServant = m.sender && m.sender.includes("الخادم");
-                    sHtml += `<div style="font-size:12px; margin-bottom:3px; color:${isServant ? '#fbbf24' : '#fff'}">
-                        <b>${m.sender}:</b> ${m.text}
-                    </div>`;
+                    sHtml += `<div style="font-size:12px; margin-bottom:3px; color:${isServant ? '#fbbf24' : '#fff'}"><b>${m.sender}:</b> ${m.text}</div>`;
                 });
-
                 sHtml += `</div><div style="display:flex; gap:5px; margin-top:8px;">
                     <input type="text" id="rep_${sid}" placeholder="رد..." style="font-size:12px; padding:5px; height:35px; background:#0f172a; border:1px solid #334155; color:white; flex-grow:1;">
                     <button onclick="replyPsy('${sid}')" style="background:#22c55e; padding:0 15px;">رد</button>
                     <button onclick="delPsyChat('${sid}')" style="background:#ef4444; padding:0 10px;">🗑️</button>
                 </div></div>`;
                 box.innerHTML += sHtml;
-                
-                setTimeout(() => {
-                    const b = document.getElementById('chatbox_' + sid);
-                    if(b) b.scrollTop = b.scrollHeight;
-                }, 100);
             });
         });
     }
 
-    // --- وظائف استلام تقارير الصلاة الجديدة ---
     function listenToPrayerReports() {
         db.ref("prayer_reports").on("value", snap => {
-            const box = document.getElementById('prayerReportsList');
-            box.innerHTML = "";
-            if(!snap.exists()) {
-                box.innerHTML = "<p style='text-align:center; color:gray; font-size:12px;'>لا توجد تقارير صلاة حتى الآن</p>";
-                return;
-            }
+            const box = document.getElementById('prayerReportsList'); box.innerHTML = "";
+            if(!snap.exists()) { box.innerHTML = "<p style='text-align:center; color:gray; font-size:12px;'>لا توجد تقارير صلاة</p>"; return; }
             snap.forEach(child => {
                 const r = child.val();
-                box.innerHTML = `<div class="prayer-report-card">
-                    <span class="duration-badge">⏱️ ${r.duration || '0 د'}</span>
-                    <b style="color:#fbbf24; font-size:14px;">👤 ${r.makhdom}</b><br>
-                    <small style="color:#94a3b8;">📅 ${r.time}</small>
-                    <div style="margin-top:8px; border-top: 1px solid #334155; padding-top:5px;">
-                        <div style="margin-bottom:3px;">📖 <b>الأجبية:</b> ${r.agpeya || '---'}</div>
-                        <div style="margin-bottom:3px;">🕊️ <b>شكر:</b> ${r.thanks || '---'}</div>
-                        <div style="margin-bottom:3px;">🙏 <b>توبة:</b> ${r.forgive || '---'}</div>
-                        <div style="margin-bottom:3px;">❤️ <b>حب:</b> ${r.heart || '---'}</div>
-                        <div style="margin-bottom:3px;">🔗 <b>ثبات:</b> ${r.union || '---'}</div>
-                        <div style="color:#4ade80;">📜 <b>الآية:</b> ${r.verse || '---'}</div>
-                    </div>
-                </div>` + box.innerHTML;
+                box.innerHTML = `<div class="prayer-report-card"><span class="duration-badge">⏱️ ${r.duration || '0 د'}</span><b style="color:#fbbf24; font-size:14px;">👤 ${r.makhdom}</b><br><small style="color:#94a3b8;">📅 ${r.time}</small>
+                    <div style="margin-top:8px; border-top: 1px solid #334155; padding-top:5px;"><div>📖 <b>الأجبية:</b> ${r.agpeya || '---'}</div><div>🕊️ <b>شكر:</b> ${r.thanks || '---'}</div><div>🙏 <b>توبة:</b> ${r.forgive || '---'}</div><div>❤️ <b>حب:</b> ${r.heart || '---'}</div><div>🔗 <b>ثبات:</b> ${r.union || '---'}</div><div style="color:#4ade80;">📜 <b>الآية:</b> ${r.verse || '---'}</div></div></div>` + box.innerHTML;
             });
         });
     }
 
-    function clearPrayerReports() {
-        if(prompt("اكتب كلمة السر لمسح كافة تقارير الصلاة:") === "jesus 777") {
-            db.ref("prayer_reports").remove().then(() => alert("تم مسح السجل بنجاح ✅"));
-        }
-    }
+    function clearPrayerReports() { if(prompt("باسوورد مسح التقارير:") === "jesus 777") db.ref("prayer_reports").remove(); }
 
-    // --- وظائف المسابقة (لم يتم تغييرها) ---
     function saveQuizTimer() {
         const val = document.getElementById('quizTimerInp').value;
-        if(val && val > 0) {
-            db.ref("settings/quizTimer").set(parseInt(val)).then(() => alert("تم حفظ الوقت: " + val + " دقائق ⏱️"));
-        } else {
-            alert("يرجى إدخال وقت صحيح");
-        }
+        if(val && val > 0) db.ref("settings/quizTimer").set(parseInt(val)).then(() => alert("تم الحفظ ✅"));
     }
 
-    function toggleQuizVisibility() {
-        db.ref("settings/quizEnabled").once("value", snap => {
-            const current = snap.val() || false;
-            db.ref("settings/quizEnabled").set(!current);
-        });
-    }
+    function toggleQuizVisibility() { db.ref("settings/quizEnabled").once("value", snap => { db.ref("settings/quizEnabled").set(!(snap.val() || false)); }); }
+    function listenQuizStatus() { db.ref("settings/quizEnabled").on("value", snap => {
+        const isVisible = snap.val() === true;
+        const btn = document.getElementById('quizVisibilityBtn');
+        btn.innerText = isVisible ? "ظاهرة للمخدومين ✅" : "مخفية الآن ❌";
+        btn.style.background = isVisible ? "#22c55e" : "#ef4444";
+    }); }
 
-    function listenQuizStatus() {
-        db.ref("settings/quizEnabled").on("value", snap => {
-            const isVisible = snap.val() === true;
-            const btn = document.getElementById('quizVisibilityBtn');
-            if(btn) {
-                btn.innerText = isVisible ? "ظاهرة للمخدومين ✅" : "مخفية الآن ❌";
-                btn.style.background = isVisible ? "#22c55e" : "#ef4444";
-            }
-        });
-    }
-
-    function toggleQuizSection() {
-        const q = document.getElementById('quizSection');
-        q.style.display = (q.style.display === 'block') ? 'none' : 'block';
-    }
+    function toggleQuizSection() { const q = document.getElementById('quizSection'); q.style.display = (q.style.display === 'block') ? 'none' : 'block'; }
 
     function switchTab(tab) {
         ['manual', 'net', 'res'].forEach(t => {
-            const view = document.getElementById('view' + t.charAt(0).toUpperCase() + t.slice(1));
-            const btn = document.getElementById('tab' + t.charAt(0).toUpperCase() + t.slice(1));
-            if(view) view.style.display = (tab === t) ? 'block' : 'none';
-            if(btn) btn.classList.toggle('active-tab', tab === t);
+            document.getElementById('view' + t.charAt(0).toUpperCase() + t.slice(1)).style.display = (tab === t) ? 'block' : 'none';
+            document.getElementById('tab' + t.charAt(0).toUpperCase() + t.slice(1)).classList.toggle('active-tab', tab === t);
         });
         if(tab === 'res') loadResults();
     }
@@ -477,45 +385,26 @@
         const type = document.getElementById('qType').value;
         document.getElementById('choiceArea').style.display = (type === 'choice') ? 'block' : 'none';
         document.getElementById('tfArea').style.display = (type === 'truefalse') ? 'block' : 'none';
-        document.getElementById('textOnlyArea').style.display = (type === 'text') ? 'block' : 'none';
+        document.getElementById('textOnlyArea').style.display = (type === 'text' || type === 'essay') ? 'block' : 'none';
     }
 
     function saveManualQuestion() {
         const type = document.getElementById('qType').value;
         const qText = document.getElementById('mQuestion').value.trim();
         const qPoints = document.getElementById('mPoints').value.trim() || 1;
-        
-        if(!qText) return alert("اكتب السؤال أولاً");
-        
-        let data = { 
-            text: qText, 
-            type: type, 
-            points: parseInt(qPoints),
-            options: [] 
-        };
-        
+        if(!qText) return alert("اكتب السؤال");
+        let data = { text: qText, type: type, points: parseInt(qPoints), options: [] };
         if(type === 'choice') {
-            const opts = [
-                document.getElementById('opt0').value.trim(), 
-                document.getElementById('opt1').value.trim(), 
-                document.getElementById('opt2').value.trim(), 
-                document.getElementById('opt3').value.trim()
-            ];
-            data.options = opts;
-            data.correctAnswer = opts[document.querySelector('input[name="correctRadio"]:checked').value];
+            const opts = [document.getElementById('opt0').value.trim(), document.getElementById('opt1').value.trim(), document.getElementById('opt2').value.trim(), document.getElementById('opt3').value.trim()];
+            data.options = opts; data.correctAnswer = opts[document.querySelector('input[name="correctRadio"]:checked').value];
         } else if(type === 'truefalse') {
-            data.options = ["صح", "خطأ"];
-            data.correctAnswer = document.querySelector('input[name="tfRadio"]:checked').value;
+            data.options = ["صح", "خطأ"]; data.correctAnswer = document.querySelector('input[name="tfRadio"]:checked').value;
+        } else if(type === 'essay') {
+            data.options = [""]; data.correctAnswer = "مراجعة خادم"; 
         } else {
-            data.options = [""]; 
-            data.correctAnswer = document.getElementById('manualAns').value.trim();
+            data.options = [""]; data.correctAnswer = document.getElementById('manualAns').value.trim();
         }
-        
-        db.ref("bible_quiz/questions").push(data).then(() => {
-            alert(`تم حفظ السؤال بنجاح ✅`);
-            document.getElementById('mQuestion').value = "";
-            document.getElementById('mPoints').value = "";
-        });
+        db.ref("bible_quiz/questions").push(data).then(() => { alert("تم الحفظ ✅"); document.getElementById('mQuestion').value = ""; });
     }
 
     function saveBulkNet() {
@@ -524,160 +413,67 @@
         input.split('\n').forEach(line => {
             if(line.includes('|')) {
                 const parts = line.split('|');
-                db.ref("bible_quiz/questions").push({ 
-                    text: parts[0].trim(), 
-                    correctAnswer: parts[1].trim(), 
-                    type: "text", 
-                    options: [""],
-                    points: parts[2] ? parseInt(parts[2].trim()) : 1 
-                });
+                db.ref("bible_quiz/questions").push({ text: parts[0].trim(), correctAnswer: parts[1].trim(), type: "text", options: [""], points: parts[2] ? parseInt(parts[2].trim()) : 1 });
             }
         });
-        alert("تمت إضافة الأسئلة بنجاح 🚀");
-        document.getElementById('bulkInput').value = "";
+        alert("تم ✅"); document.getElementById('bulkInput').value = "";
     }
 
     function loadResults() {
         db.ref("bible_quiz/submissions").once("value", snap => {
             const list = document.getElementById('resList'); list.innerHTML = "";
-            if(!snap.exists()) { list.innerHTML = "لا توجد نتائج بعد"; return; }
-            snap.forEach(c => {
-                list.innerHTML += `<div style="padding: 5px; border-bottom: 1px solid #334155;">👤 ${c.val().userName}: <span style="color:#fbbf24">${c.val().score} درجة</span></div>`;
-            });
+            if(!snap.exists()) { list.innerHTML = "لا توجد نتائج"; return; }
+            snap.forEach(c => { list.innerHTML += `<div style="padding: 5px; border-bottom: 1px solid #334155;">👤 ${c.val().userName}: <span style="color:#fbbf24">${c.val().score} درجة</span></div>`; });
         });
     }
 
-    function confirmClearQuiz() {
-        if (prompt("⚠️ لتصفير المسابقة بالكامل (الأسئلة والنتائج)، اكتب باسوورد الحذف:") === "jesus 777") {
-            if(confirm("هل أنت متأكد؟ هذا سيحذف كل الأسئلة الحالية ونتائج المخدومين لبدء مسابقة جديدة.")) {
-                db.ref("bible_quiz").remove().then(() => {
-                    alert("تم تصفير المسابقة بنجاح 🗑️");
-                    db.ref("activity_logs").push(`🗑️ ${currentServant} قام بتصفير مسابقة الكتاب المقدس`);
-                    loadResults(); 
-                });
-            }
-        } else {
-            alert("باسوورد خطأ!");
-        }
-    }
+    function confirmClearQuiz() { if (prompt("باسوورد تصفير المسابقة:") === "jesus 777") db.ref("bible_quiz").remove().then(() => alert("تم ✅")); }
 
-    // --- وظائف إرشادات الصلاة ---
     function updatePrayerHints() {
-        const hints = {
-            agpeya: document.getElementById('adm_agpeya').value,
-            thanks: document.getElementById('adm_thanks').value,
-            forgive: document.getElementById('adm_forgive').value,
-            heart: document.getElementById('adm_heart').value,
-            union: document.getElementById('adm_union').value,
-            verse: document.getElementById('adm_verse').value
-        };
-
-        db.ref("admin_prayer_hints").set(hints)
-        .then(() => {
-            alert("تم تحديث إرشادات الصلاة بنجاح! ستظهر الآن لكل المخدومين ❤️");
-        })
-        .catch((error) => {
-            alert("حدث خطأ أثناء التحديث");
-            console.error(error);
-        });
+        const hints = { agpeya: document.getElementById('adm_agpeya').value, thanks: document.getElementById('adm_thanks').value, forgive: document.getElementById('adm_forgive').value, heart: document.getElementById('adm_heart').value, union: document.getElementById('adm_union').value, verse: document.getElementById('adm_verse').value };
+        db.ref("admin_prayer_hints").set(hints).then(() => alert("تم التحديث ✅"));
     }
 
     function loadCurrentHints() {
-        db.ref("admin_prayer_hints").once("value", (snapshot) => {
-            const data = snapshot.val();
-            if(data) {
-                document.getElementById('adm_agpeya').value = data.agpeya || "";
-                document.getElementById('adm_thanks').value = data.thanks || "";
-                document.getElementById('adm_forgive').value = data.forgive || "";
-                document.getElementById('adm_heart').value = data.heart || "";
-                document.getElementById('adm_union').value = data.union || "";
-                document.getElementById('adm_verse').value = data.verse || "";
+        db.ref("admin_prayer_hints").once("value", snap => {
+            const d = snap.val(); if(d) {
+                document.getElementById('adm_agpeya').value = d.agpeya || ""; document.getElementById('adm_thanks').value = d.thanks || ""; document.getElementById('adm_forgive').value = d.forgive || ""; document.getElementById('adm_heart').value = d.heart || ""; document.getElementById('adm_union').value = d.union || ""; document.getElementById('adm_verse').value = d.verse || "";
             }
         });
     }
-
-    // --- وظائف عامة ---
-    function replyPsy(sid) {
-        const inp = document.getElementById('rep_' + sid);
-        if(inp.value.trim()) {
-            db.ref("psychology/private_chats/" + sid).push({ sender: "الخادم (" + currentServant + ")", text: inp.value.trim() });
-            inp.value = "";
-        }
-    }
-    
-    function delPsyChat(sid) { if(confirm("حذف المحادثة؟")) db.ref("psychology/private_chats/" + sid).remove(); }
 
     function renderUI() {
         const list = document.getElementById('leaderboard'); list.innerHTML = "";
         localData.sort((a,b) => b.score - a.score).forEach((p) => {
-            list.innerHTML += `<div class="card"><div style="font-size:11px; font-weight:bold; height:28px; overflow:hidden;">${p.name}</div>
-                <div style="font-size:22px; font-weight:bold; color:#fbbf24;">${p.score}</div>
-                <div class="edit-tools" style="display: ${isEditMode ? 'block' : 'none'}"><div class="plus-minus">
-                <button onclick="updateScore('${p.id}', 1)" style="background:#475569">+1</button>
-                <button onclick="updateScore('${p.id}', 5)" style="background:#6366f1">+5</button>
-                <button onclick="updateScore('${p.id}', -1)" style="background:#ef4444">-1</button></div>
+            list.innerHTML += `<div class="card"><div style="font-size:11px; font-weight:bold; height:28px; overflow:hidden;">${p.name}</div><div style="font-size:22px; font-weight:bold; color:#fbbf24;">${p.score}</div>
+                <div class="edit-tools" style="display: ${isEditMode ? 'block' : 'none'}"><div class="plus-minus"><button onclick="updateScore('${p.id}', 1)" style="background:#475569">+1</button><button onclick="updateScore('${p.id}', 5)" style="background:#6366f1">+5</button><button onclick="updateScore('${p.id}', -1)" style="background:#ef4444">-1</button></div>
                 <button onclick="deleteMakhdoum('${p.id}', '${p.name}')" style="color:#f87171; background:none; font-size:9px; margin-top:5px;">حذف آمن 🔒</button></div></div>`;
         });
     }
 
     function updateScore(id, val) { 
-        const makhdoum = localData.find(m => m.id === id);
+        const m = localData.find(x => x.id === id);
         db.ref(`points_data/${id}/score`).transaction(c => (c || 0) + val);
-        const time = new Date().toLocaleTimeString('ar-EG', {hour:'2-digit', minute:'2-digit'});
-        db.ref("activity_logs").push(`[${time}] ${currentServant}: عدل ${makhdoum.name} (${val>0?'+':''}${val})`);
+        db.ref("activity_logs").push(`${currentServant}: عدل ${m.name} (${val>0?'+':''}${val})`);
     }
 
-    function addNewMakhdoum() {
-        const inp = document.getElementById('nameInp'); const name = inp.value.trim();
-        if(name) { db.ref("points_data").push({ name: name, score: 0 }); db.ref("activity_logs").push(`${currentServant} أضاف مخدوم: ${name}`); inp.value = ""; }
-    }
-
-    function sendAdminReply() {
-        const inp = document.getElementById('adminReplyInp'); const text = inp.value.trim();
-        if(text) { db.ref("chat").push({ sender: currentServant, text: text }); inp.value = ""; }
-    }
-
-    function toggleLibVisibility() {
-        const currentBtnText = document.getElementById('libStatusBtn').innerText;
-        const isNowVisible = currentBtnText.includes("مخفية");
-        db.ref("settings").update({ libVisible: isNowVisible });
-    }
-
-    function updateMediaLinks() {
-        const links = { hymn: document.getElementById('hymnUrl').value, pdf: document.getElementById('pdfUrl').value, video: document.getElementById('videoUrl').value };
-        db.ref("media_library").set(links).then(() => { alert("تم التحديث ✅"); });
-    }
-
-    function deleteMakhdoum(id, name) {
-        if (prompt(`⚠️ باسوورد الحذف لـ (${name}):`) === "jesus 777") {
-            db.ref(`points_data/${id}`).remove();
-        }
-    }
-
-    function togglePsyResponse(key, status) { db.ref(`psychology/confessions/${key}`).update({ responded: status }); }
-    function deletePsyMsg(key) { if (prompt("⚠️ باسوورد الحذف:") === "jesus 777") db.ref(`psychology/confessions/${key}`).remove(); }
-    function resetAllScores() { if (prompt("⚠️ كلمة السر:") === "jesus 777" && confirm("تصفير الجميع؟")) { let up = {}; localData.forEach(p => up[`points_data/${p.id}/score`] = 0); db.ref().update(up); } }
-
-    function toggleEditMode() {
-        isEditMode = !isEditMode;
-        document.getElementById('modeBtn').innerText = isEditMode ? "✅ إنهاء" : "📝 تعديل";
-        document.getElementById('addArea').style.display = isEditMode ? "flex" : "none";
-        document.getElementById('resetBtn').style.display = isEditMode ? "block" : "none";
-        renderUI();
-    }
-
-    function searchMakhdoum() {
-        let f = document.getElementById('searchInput').value.toLowerCase();
-        document.querySelectorAll('#leaderboard .card').forEach(c => {
-            c.style.display = c.querySelector('div').innerText.toLowerCase().includes(f) ? "" : "none";
-        });
-    }
-
-    function clearLog() { if(confirm("مسح السجل؟")) db.ref("activity_logs").remove(); }
-    function toggleChat() { db.ref("settings").update({ chatEnabled: !document.getElementById('chatStatusBtn').innerText.includes("إيقاف") }); }
+    function addNewMakhdoum() { const inp = document.getElementById('nameInp'); if(inp.value.trim()) { db.ref("points_data").push({ name: inp.value.trim(), score: 0 }); inp.value = ""; } }
+    function sendAdminReply() { const inp = document.getElementById('adminReplyInp'); if(inp.value.trim()) { db.ref("chat").push({ sender: currentServant, text: inp.value.trim() }); inp.value = ""; } }
+    function toggleLibVisibility() { db.ref("settings/libVisible").once("value", snap => db.ref("settings").update({ libVisible: !(snap.val() !== false) })); }
+    function updateMediaLinks() { db.ref("media_library").set({ hymn: document.getElementById('hymnUrl').value, pdf: document.getElementById('pdfUrl').value, video: document.getElementById('videoUrl').value }).then(() => alert("تم ✅")); }
+    function deleteMakhdoum(id, name) { if (prompt(`باسوورد حذف (${name}):`) === "jesus 777") db.ref(`points_data/${id}`).remove(); }
+    function togglePsyResponse(k, s) { db.ref(`psychology/confessions/${k}`).update({ responded: s }); }
+    function deletePsyMsg(k) { if (prompt("باسوورد الحذف:") === "jesus 777") db.ref(`psychology/confessions/${k}`).remove(); }
+    function resetAllScores() { if (prompt("كلمة السر:") === "jesus 777" && confirm("تصفير الجميع؟")) { let up = {}; localData.forEach(p => up[`points_data/${p.id}/score`] = 0); db.ref().update(up); } }
+    function toggleEditMode() { isEditMode = !isEditMode; document.getElementById('modeBtn').innerText = isEditMode ? "✅ إنهاء" : "📝 تعديل"; document.getElementById('addArea').style.display = isEditMode ? "flex" : "none"; document.getElementById('resetBtn').style.display = isEditMode ? "block" : "none"; renderUI(); }
+    function searchMakhdoum() { let f = document.getElementById('searchInput').value.toLowerCase(); document.querySelectorAll('#leaderboard .card').forEach(c => c.style.display = c.querySelector('div').innerText.toLowerCase().includes(f) ? "" : "none"); }
+    function clearLog() { if(confirm("مسح؟")) db.ref("activity_logs").remove(); }
+    function toggleChat() { db.ref("settings/chatEnabled").once("value", snap => db.ref("settings").update({ chatEnabled: !(snap.val() !== false) })); }
     function clearChatMessages() { if(confirm("مسح؟")) db.ref("chat").remove(); }
     function sendAlert() { db.ref("admin_announcement").set(document.getElementById('alertContent').value); }
     function clearAlert() { db.ref("admin_announcement").set(""); document.getElementById('alertContent').value = ""; }
+    function replyPsy(sid) { const inp = document.getElementById('rep_' + sid); if(inp.value.trim()) { db.ref("psychology/private_chats/" + sid).push({ sender: "الخادم (" + currentServant + ")", text: inp.value.trim() }); inp.value = ""; } }
+    function delPsyChat(sid) { if(confirm("حذف؟")) db.ref("psychology/private_chats/" + sid).remove(); }
 </script>
 </body>
 </html>
