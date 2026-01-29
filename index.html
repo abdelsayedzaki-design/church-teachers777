@@ -60,6 +60,9 @@
 
         .prayer-report-card { background: #0f172a; padding: 12px; border-radius: 10px; margin-bottom: 10px; border-right: 5px solid #fbbf24; font-size: 13px; }
         .duration-badge { background: #fbbf24; color: #0f172a; padding: 2px 8px; border-radius: 5px; font-weight: bold; float: left; }
+        
+        /* تنسيق إضافي لعرض الإجابات التفصيلية */
+        .ans-detail-box { font-size: 11px; background: rgba(0,0,0,0.3); padding: 5px; border-radius: 5px; margin-top: 5px; border: 1px solid #334155; }
     </style>
 </head>
 <body>
@@ -138,7 +141,7 @@
         </div>
 
         <div id="viewRes" style="display: none;">
-            <div id="resList" style="max-height: 200px; overflow-y: auto; background: #020617; padding: 10px; border-radius: 8px; margin-bottom: 10px;"></div>
+            <div id="resList" style="max-height: 250px; overflow-y: auto; background: #020617; padding: 10px; border-radius: 8px; margin-bottom: 10px;"></div>
             <button onclick="confirmClearQuiz()" style="background:#ef4444;" class="main-btn">تصفير المسابقة لبدء واحدة جديدة 🗑️</button>
         </div>
     </div>
@@ -419,11 +422,29 @@
         alert("تم ✅"); document.getElementById('bulkInput').value = "";
     }
 
+    /* وظيفة عرض النتائج مع الإجابات التفصيلية */
     function loadResults() {
         db.ref("bible_quiz/submissions").once("value", snap => {
             const list = document.getElementById('resList'); list.innerHTML = "";
             if(!snap.exists()) { list.innerHTML = "لا توجد نتائج"; return; }
-            snap.forEach(c => { list.innerHTML += `<div style="padding: 5px; border-bottom: 1px solid #334155;">👤 ${c.val().userName}: <span style="color:#fbbf24">${c.val().score} درجة</span></div>`; });
+            snap.forEach(c => { 
+                const data = c.val();
+                let ansHtml = "";
+                if(data.answers) {
+                    data.answers.forEach((a, idx) => {
+                        let color = (a.type === 'essay') ? '#fbbf24' : '#22c55e';
+                        ansHtml += `<div style="margin-bottom:3px; border-bottom:1px solid rgba(255,255,255,0.05);">س${idx+1}: <span style="color:${color}">${a.userAnswer || "لا توجد"}</span></div>`;
+                    });
+                }
+                list.innerHTML += `
+                <div style="padding: 10px; border-bottom: 1px solid #334155; background: rgba(255,255,255,0.02); border-radius: 8px; margin-bottom: 5px;">
+                    <div style="display:flex; justify-content:space-between;">
+                        <b>👤 ${data.userName}</b>
+                        <span style="color:#fbbf24; font-weight:bold;">${data.score}/${data.max}</span>
+                    </div>
+                    <div class="ans-detail-box">${ansHtml}</div>
+                </div>`; 
+            });
         });
     }
 
