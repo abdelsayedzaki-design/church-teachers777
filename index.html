@@ -38,6 +38,7 @@
         
         input, textarea, select { padding: 10px; border-radius: 8px; border: none; outline: none; background: #0f172a; color: white; width: 100%; box-sizing: border-box; font-size: 16px; margin-bottom: 5px; }
         .add-area { display: none; background: #334155; padding: 10px; border-radius: 10px; margin-bottom: 15px; gap: 10px; }
+        .add-area-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 8px; margin-bottom: 8px; }
         
         .log-box { height: 110px; overflow-y: auto; font-size: 11px; background: #020617; padding: 8px; border-radius: 8px; color: #94a3b8; border: 1px dashed #334155; line-height: 1.6; }
         .chat-area { height: 120px; overflow-y: auto; background: #0f172a; padding: 8px; border-radius: 8px; font-size: 12px; margin-top: 10px; border: 1px solid #334155; }
@@ -155,10 +156,18 @@
         <h4 style="margin: 0 0 10px 0; color: #fbbf24;">🏆 درجات المخدومين</h4>
         <input type="text" id="searchInput" onkeyup="searchMakhdoum()" placeholder="🔍 ابحث عن اسم..." style="margin-bottom:10px; background:#334155;">
         <div id="addArea" class="add-area">
-            <input type="text" id="nameInp" placeholder="اسم مخدوم جديد..." style="flex:1;">
-            <button onclick="addNewMakhdoum()" style="background:#22c55e; padding:0 15px;">إضافة</button>
+            <div class="add-area-grid">
+                <input type="text" id="nameInp" placeholder="اسم مخدوم جديد..." style="flex:1;">
+                <input type="tel" id="phoneInp" placeholder="رقم التليفون" style="flex:1;">
+            </div>
+            <button onclick="addNewMakhdoum()" style="background:#22c55e; padding:10px 15px; font-weight:bold;">إضافة</button>
         </div>
         <div id="leaderboard" class="grid"></div>
+    </div>
+
+    <div class="section" style="border: 2px solid #10b981; background: rgba(16, 185, 129, 0.05);">
+        <h4 style="margin: 0 0 15px 0; color: #10b981;">📊 تفاصيل النقاط لكل مخدوم</h4>
+        <div id="pointsBreakdownList" style="max-height: 400px; overflow-y: auto;"></div>
     </div>
 
     <div class="section" style="border-right: 4px solid #22c55e;">
@@ -272,11 +281,13 @@
 
     function startListening() {
         listenQuizStatus(); 
+        loadPointsBreakdown();
         db.ref("settings/quizTimer").on("value", snap => { if(snap.exists()) document.getElementById('quizTimerInp').value = snap.val(); });
         db.ref("points_data").on("value", snap => {
             const data = snap.val();
             localData = data ? Object.keys(data).map(k => ({id:k, ...data[k]})) : [];
             renderUI();
+            loadPointsBreakdown(); // تحديث تفاصيل النقاط عند تغيير الدرجات
         });
         db.ref("media_library").on("value", snap => {
             const d = snap.val();
@@ -360,6 +371,151 @@
     }
 
     function clearPrayerReports() { if(prompt("باسوورد مسح التقارير:") === "jesus 777") db.ref("prayer_reports").remove(); }
+
+    function loadPointsBreakdown() {
+        const box = document.getElementById('pointsBreakdownList');
+        box.innerHTML = "<p style='text-align:center; color:gray; font-size:12px;'>جاري تحميل البيانات...</p>";
+
+        // جمع كل البيانات
+        Promise.all([
+            db.ref("points_data").once("value"),
+            db.ref("bible_quiz/submissions").once("value"),
+            db.ref("prayer_reports").once("value"),
+            db.ref("attendance_logs").once("value")
+        ]).then(([pointsSnap, quizSnap, prayerSnap, attendanceSnap]) => {
+            const pointsData = pointsSnap.val() || {};
+            
+            // تجميع نقاط المسابقة مع التواريخ
+            const quizDetails = {};
+            if (quizSnap.exists()) {
+                quizSnap.forEach(child => {
+                    const data = child.val();
+                    if (!quizDetails[data.userName]) quizDetails[data.userName] = [];
+                    quizDetails[data.userName].push({
+                        points: data.finalPoints || data.score || 0,
+                        time: data.time || "غير محدد"
+                    });
+                });
+            }
+
+            // تجميع نقاط الصلاة مع التواريخ
+            const prayerDetails = {};
+            if (prayerSnap.exists()) {
+                prayerSnap.forEach(child => {
+                    const data = child.val();
+                    if (!prayerDetails[data.makhdom]) prayerDetails[data.makhdom] = [];
+                    prayerDetails[data.makhdom].push({
+                        points: 5,
+                        time: data.time || "غير محدد"
+                    });
+                });
+            }
+
+            // تجميع نقاط الحضور مع التواريخ
+            const attendanceDetails = {};
+            if (attendanceSnap.exists()) {
+                attendanceSnap.forEach(child => {
+                    const data = child.val();
+                    const name = data.makhdom;
+                    if (!attendanceDetails[name]) attendanceDetails[name] = [];
+                    attendanceDetails[name].push({
+                        type: data.type,
+                        points: 5,
+                        time: data.submittedAt || "غير محدد"
+                    });
+                });
+            }
+
+            // عرض النتائج
+            box.innerHTML = "";
+            const sortedNames = Object.keys(pointsData).map(k => ({id: k, ...pointsData[k]})).sort((a,b) => b.score - a.score);
+            
+            if (sortedNames.length === 0) {
+                box.innerHTML = "<p style='text-align:center; color:gray; font-size:12px;'>لا يوجد مخدومين</p>";
+                return;
+            }
+
+            sortedNames.forEach(p => {
+                const name = p.name;
+                const phone = p.phone || "غير محدد";
+                const total = p.score || 0;
+                
+                const quizList = quizDetails[name] || [];
+                const prayerList = prayerDetails[name] || [];
+                const attendanceList = attendanceDetails[name] || [];
+                
+                const quizTotal = quizList.reduce((sum, item) => sum + item.points, 0);
+                const prayerTotal = prayerList.reduce((sum, item) => sum + item.points, 0);
+                const attendanceTotal = attendanceList.reduce((sum, item) => sum + item.points, 0);
+                const other = total - quizTotal - prayerTotal - attendanceTotal;
+
+                let detailsHTML = '';
+                
+                // تفاصيل المسابقات
+                if (quizList.length > 0) {
+                    detailsHTML += '<div style="margin-top:10px; padding:8px; background:rgba(99,102,241,0.05); border-radius:8px; border:1px solid #6366f1;">';
+                    detailsHTML += '<div style="color:#a5b4fc; font-size:11px; font-weight:bold; margin-bottom:5px;">📖 تفاصيل مسابقات الكتاب المقدس:</div>';
+                    quizList.forEach(item => {
+                        detailsHTML += `<div style="font-size:10px; color:#cbd5e1; padding:3px 0; border-bottom:1px dashed rgba(99,102,241,0.2);">• ${item.points} نقطة - ${item.time}</div>`;
+                    });
+                    detailsHTML += '</div>';
+                }
+                
+                // تفاصيل الصلاة
+                if (prayerList.length > 0) {
+                    detailsHTML += '<div style="margin-top:10px; padding:8px; background:rgba(251,191,36,0.05); border-radius:8px; border:1px solid #fbbf24;">';
+                    detailsHTML += '<div style="color:#fde68a; font-size:11px; font-weight:bold; margin-bottom:5px;">🙏 تفاصيل الصلاة:</div>';
+                    prayerList.forEach(item => {
+                        detailsHTML += `<div style="font-size:10px; color:#cbd5e1; padding:3px 0; border-bottom:1px dashed rgba(251,191,36,0.2);">• ${item.points} نقاط - ${item.time}</div>`;
+                    });
+                    detailsHTML += '</div>';
+                }
+                
+                // تفاصيل الحضور
+                if (attendanceList.length > 0) {
+                    detailsHTML += '<div style="margin-top:10px; padding:8px; background:rgba(34,197,94,0.05); border-radius:8px; border:1px solid #22c55e;">';
+                    detailsHTML += '<div style="color:#86efac; font-size:11px; font-weight:bold; margin-bottom:5px;">⛪ تفاصيل الحضور:</div>';
+                    attendanceList.forEach(item => {
+                        detailsHTML += `<div style="font-size:10px; color:#cbd5e1; padding:3px 0; border-bottom:1px dashed rgba(34,197,94,0.2);">• ${item.type} - ${item.points} نقاط - ${item.time}</div>`;
+                    });
+                    detailsHTML += '</div>';
+                }
+
+                box.innerHTML += `
+                <div style="background: #1e293b; padding: 12px; border-radius: 10px; margin-bottom: 10px; border-right: 4px solid #10b981;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; border-bottom: 1px solid #334155; padding-bottom: 8px;">
+                        <div>
+                            <b style="color: #fbbf24; font-size: 16px;">👤 ${name}</b>
+                            <div style="background: rgba(148,163,184,0.2); display: inline-block; padding: 3px 8px; border-radius: 5px; margin-right: 8px;">
+                                <span style="color: #94a3b8; font-size: 11px;">📱 ${phone}</span>
+                            </div>
+                        </div>
+                        <span style="background: #fbbf24; color: #0f172a; padding: 4px 12px; border-radius: 8px; font-weight: bold; font-size: 16px;">المجموع: ${total}</span>
+                    </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 13px;">
+                        <div style="background: rgba(99, 102, 241, 0.1); padding: 8px; border-radius: 8px; border: 1px solid #6366f1;">
+                            <span style="color: #a5b4fc;">📖 الكتاب المقدس:</span>
+                            <b style="color: #6366f1; float: left;">${quizTotal}</b>
+                        </div>
+                        <div style="background: rgba(251, 191, 36, 0.1); padding: 8px; border-radius: 8px; border: 1px solid #fbbf24;">
+                            <span style="color: #fde68a;">🙏 الصلاة:</span>
+                            <b style="color: #fbbf24; float: left;">${prayerTotal}</b>
+                        </div>
+                        <div style="background: rgba(34, 197, 94, 0.1); padding: 8px; border-radius: 8px; border: 1px solid #22c55e;">
+                            <span style="color: #86efac;">⛪ الحضور:</span>
+                            <b style="color: #22c55e; float: left;">${attendanceTotal}</b>
+                        </div>
+                        ${other > 0 ? `<div style="background: rgba(148, 163, 184, 0.1); padding: 8px; border-radius: 8px; border: 1px solid #94a3b8;">
+                            <span style="color: #cbd5e1;">✨ أخرى:</span>
+                            <b style="color: #94a3b8; float: left;">${other}</b>
+                        </div>` : ''}
+                    </div>
+                    ${detailsHTML}
+                    <button onclick="clearMakhdoumPointsDetails('${name}')" style="width:100%; margin-top:10px; padding:8px; background:#dc2626; color:white; border:none; border-radius:8px; font-weight:bold; cursor:pointer; font-size:11px;">🗑️ تصفير تفاصيل النقاط (حذف السجل)</button>
+                </div>`;
+            });
+        });
+    }
 
     function saveQuizTimer() {
         const val = document.getElementById('quizTimerInp').value;
@@ -466,22 +622,49 @@
     function renderUI() {
         const list = document.getElementById('leaderboard'); list.innerHTML = "";
         localData.sort((a,b) => b.score - a.score).forEach((p) => {
-            list.innerHTML += `<div class="card"><div style="font-size:11px; font-weight:bold; height:28px; overflow:hidden;">${p.name}</div><div style="font-size:22px; font-weight:bold; color:#fbbf24;">${p.score}</div>
+            const phoneDisplay = p.phone ? `<div style="font-size:10px; color:#94a3b8; margin-top:2px;">📱 ${p.phone}</div>` : '';
+            list.innerHTML += `<div class="card"><div style="font-size:11px; font-weight:bold; height:28px; overflow:hidden;">${p.name}</div>${phoneDisplay}<div style="font-size:22px; font-weight:bold; color:#fbbf24;">${p.score}</div>
                 <div class="edit-tools" style="display: ${isEditMode ? 'block' : 'none'}"><div class="plus-minus"><button onclick="updateScore('${p.id}', 1)" style="background:#475569">+1</button><button onclick="updateScore('${p.id}', 5)" style="background:#6366f1">+5</button><button onclick="updateScore('${p.id}', -1)" style="background:#ef4444">-1</button></div>
+                <button onclick="resetSingleScore('${p.id}', '${p.name}')" style="background:#fb923c; width:100%; padding:8px; font-size:10px; margin-top:5px; font-weight:bold;">🔄 تصفير</button>
                 <button onclick="deleteMakhdoum('${p.id}', '${p.name}')" style="color:#f87171; background:none; font-size:9px; margin-top:5px;">حذف آمن 🔒</button></div></div>`;
         });
     }
 
     function updateScore(id, val) { 
         const m = localData.find(x => x.id === id);
-        db.ref(`points_data/${id}/score`).transaction(c => (c || 0) + val);
+        db.ref(`points_data/${id}`).transaction(current => {
+            if (!current) return { score: val, lastUpdate: Date.now() };
+            return { 
+                ...current, 
+                score: (current.score || 0) + val,
+                lastUpdate: Date.now()
+            };
+        });
         db.ref("activity_logs").push(`${currentServant}: عدل ${m.name} (${val>0?'+':''}${val})`);
     }
 
-    function addNewMakhdoum() { const inp = document.getElementById('nameInp'); if(inp.value.trim()) { db.ref("points_data").push({ name: inp.value.trim(), score: 0 }); inp.value = ""; } }
+    function addNewMakhdoum() { 
+        const nameInp = document.getElementById('nameInp'); 
+        const phoneInp = document.getElementById('phoneInp');
+        if(nameInp.value.trim()) { 
+            db.ref("points_data").push({ 
+                name: nameInp.value.trim(), 
+                phone: phoneInp.value.trim() || "",
+                score: 0 
+            }); 
+            nameInp.value = ""; 
+            phoneInp.value = "";
+        } 
+    }
     function sendAdminReply() { const inp = document.getElementById('adminReplyInp'); if(inp.value.trim()) { db.ref("chat").push({ sender: currentServant, text: inp.value.trim() }); inp.value = ""; } }
     function toggleLibVisibility() { db.ref("settings/libVisible").once("value", snap => db.ref("settings").update({ libVisible: !(snap.val() !== false) })); }
     function updateMediaLinks() { db.ref("media_library").set({ hymn: document.getElementById('hymnUrl').value, pdf: document.getElementById('pdfUrl').value, video: document.getElementById('videoUrl').value }).then(() => alert("تم ✅")); }
+    function resetSingleScore(id, name) { 
+        if (prompt(`كلمة السر لتصفير نقاط ${name}:`) === "jesus 777") { 
+            db.ref(`points_data/${id}/score`).set(0);
+            db.ref("activity_logs").push(`${currentServant}: صفّر نقاط ${name}`);
+        } 
+    }
     function deleteMakhdoum(id, name) { if (prompt(`باسوورد حذف (${name}):`) === "jesus 777") db.ref(`points_data/${id}`).remove(); }
     function togglePsyResponse(k, s) { db.ref(`psychology/confessions/${k}`).update({ responded: s }); }
     function deletePsyMsg(k) { if (prompt("باسوورد الحذف:") === "jesus 777") db.ref(`psychology/confessions/${k}`).remove(); }
@@ -495,6 +678,51 @@
     function clearAlert() { db.ref("admin_announcement").set(""); document.getElementById('alertContent').value = ""; }
     function replyPsy(sid) { const inp = document.getElementById('rep_' + sid); if(inp.value.trim()) { db.ref("psychology/private_chats/" + sid).push({ sender: "الخادم (" + currentServant + ")", text: inp.value.trim() }); inp.value = ""; } }
     function delPsyChat(sid) { if(confirm("حذف؟")) db.ref("psychology/private_chats/" + sid).remove(); }
+    
+    function clearMakhdoumPointsDetails(makhdoumName) {
+        if (!confirm(`هل أنت متأكد من حذف كل سجلات النقاط لـ "${makhdoumName}"؟\n\nسيتم حذف:\n• سجلات المسابقات\n• سجلات الصلاة\n• سجلات الحضور\n\nملحوظة: النقاط في الترتيب لن تتأثر!`)) return;
+        
+        const password = prompt("أدخل كلمة السر للتأكيد:");
+        if (password !== "jesus 777") {
+            alert("كلمة السر خاطئة!");
+            return;
+        }
+        
+        // حذف سجلات المسابقات
+        db.ref("bible_quiz/submissions").once("value", snap => {
+            const updates = {};
+            snap.forEach(child => {
+                if (child.val().userName === makhdoumName) {
+                    updates[`bible_quiz/submissions/${child.key}`] = null;
+                }
+            });
+            
+            // حذف سجلات الصلاة
+            db.ref("prayer_reports").once("value", snap2 => {
+                snap2.forEach(child => {
+                    if (child.val().makhdom === makhdoumName) {
+                        updates[`prayer_reports/${child.key}`] = null;
+                    }
+                });
+                
+                // حذف سجلات الحضور
+                db.ref("attendance_logs").once("value", snap3 => {
+                    snap3.forEach(child => {
+                        if (child.val().makhdom === makhdoumName) {
+                            updates[`attendance_logs/${child.key}`] = null;
+                        }
+                    });
+                    
+                    // تنفيذ كل الحذف دفعة واحدة
+                    db.ref().update(updates).then(() => {
+                        alert(`تم حذف كل سجلات "${makhdoumName}" بنجاح!\nالنقاط في الترتيب لم تتأثر.`);
+                        loadPointsBreakdown(); // إعادة تحميل البيانات
+                    });
+                });
+            });
+        });
+    }
+
 </script>
 </body>
 </html>
