@@ -64,6 +64,14 @@
         
         /* تنسيق إضافي لعرض الإجابات التفصيلية */
         .ans-detail-box { font-size: 11px; background: rgba(0,0,0,0.3); padding: 5px; border-radius: 5px; margin-top: 5px; border: 1px solid #334155; }
+        
+        /* تنسيق قسم التشجيع */
+        .encouragement-section { background: linear-gradient(135deg, #450a0a 0%, #7f1d1d 100%); padding: 20px; border-radius: 15px; margin-bottom: 20px; border: 3px solid #ef4444; }
+        .inactive-card { background: #1e293b; padding: 15px; border-radius: 12px; margin-bottom: 12px; border-right: 5px solid #fbbf24; transition: 0.3s; }
+        .inactive-card:hover { background: #334155; transform: translateX(-5px); }
+        .inactive-badge { background: #ef4444; color: white; padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: bold; display: inline-block; margin-bottom: 8px; }
+        .contact-btn { background: #22c55e; color: white; padding: 8px 15px; border-radius: 8px; font-size: 12px; font-weight: bold; margin-top: 8px; cursor: pointer; }
+        .contact-btn:hover { background: #16a34a; }
     </style>
 </head>
 <body>
@@ -144,6 +152,26 @@
         <div id="viewRes" style="display: none;">
             <div id="resList" style="max-height: 250px; overflow-y: auto; background: #020617; padding: 10px; border-radius: 8px; margin-bottom: 10px;"></div>
             <button onclick="confirmClearQuiz()" style="background:#ef4444;" class="main-btn">تصفير المسابقة لبدء واحدة جديدة 🗑️</button>
+        </div>
+    </div>
+
+    <div class="encouragement-section">
+        <h3 style="margin: 0 0 15px 0; color: #fbbf24; text-align: center;">💙 محتاجينك معانا - المخدومين الغير نشطين</h3>
+        <p style="text-align: center; font-size: 13px; color: #fcd34d; margin-bottom: 15px;">
+            المخدومين دول محتاجين تشجيع منك! 🌟
+        </p>
+        
+        <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+            <button onclick="sendEncouragementToAll()" style="flex: 1; background: #22c55e; padding: 12px; font-weight: bold; border-radius: 10px; font-size: 14px;">
+                📨 أرسل رسائل تشجيعية للكل
+            </button>
+            <button onclick="toggleInactiveList()" style="flex: 1; background: #6366f1; padding: 12px; font-weight: bold; border-radius: 10px; font-size: 14px;">
+                👀 شوف القائمة
+            </button>
+        </div>
+        
+        <div id="inactiveList" style="display: none; max-height: 350px; overflow-y: auto; background: rgba(0,0,0,0.3); padding: 10px; border-radius: 10px;">
+            <p style="text-align: center; color: #94a3b8; font-size: 12px;">جاري التحميل...</p>
         </div>
     </div>
 
@@ -722,6 +750,189 @@
             });
         });
     }
+
+    // ===== نظام التشجيع للمخدومين الغير نشطين =====
+    
+    function getInactiveMakhdoumeen() {
+        const now = Date.now();
+        const threeDaysAgo = now - (3 * 24 * 60 * 60 * 1000); // 3 أيام
+        
+        const inactive = localData.filter(person => {
+            const lastUpdate = person.lastUpdate || 0;
+            const hasLowScore = person.score < 15;
+            const isInactive = lastUpdate < threeDaysAgo || lastUpdate === 0;
+            
+            return hasLowScore || isInactive;
+        });
+        
+        return inactive.sort((a, b) => {
+            const aLastUpdate = a.lastUpdate || 0;
+            const bLastUpdate = b.lastUpdate || 0;
+            return aLastUpdate - bLastUpdate; // الأقدم الأول
+        });
+    }
+    
+    function displayInactiveList() {
+        const inactive = getInactiveMakhdoumeen();
+        const listDiv = document.getElementById('inactiveList');
+        
+        if (inactive.length === 0) {
+            listDiv.innerHTML = `<div style="text-align:center; padding:20px; color:#22c55e;">
+                <div style="font-size:40px; margin-bottom:10px;">🎉</div>
+                <div style="font-weight:bold; font-size:16px;">مبروك!</div>
+                <div style="font-size:13px; margin-top:5px;">كل المخدومين نشطين ومتفاعلين! 💪</div>
+            </div>`;
+            return;
+        }
+        
+        let html = `<div style="color:#fbbf24; font-weight:bold; margin-bottom:10px; font-size:13px;">
+            عدد المخدومين المحتاجين تشجيع: ${inactive.length}
+        </div>`;
+        
+        inactive.forEach(person => {
+            const lastUpdate = person.lastUpdate || 0;
+            const daysSinceUpdate = lastUpdate > 0 ? Math.floor((Date.now() - lastUpdate) / (24 * 60 * 60 * 1000)) : '∞';
+            const phoneNumber = person.phone || 'لا يوجد رقم';
+            
+            let statusText = '';
+            let statusColor = '';
+            
+            if (lastUpdate === 0) {
+                statusText = 'لم يشارك أبداً';
+                statusColor = '#ef4444';
+            } else if (daysSinceUpdate > 7) {
+                statusText = `آخر نشاط: قبل ${daysSinceUpdate} يوم`;
+                statusColor = '#f97316';
+            } else if (daysSinceUpdate >= 3) {
+                statusText = `آخر نشاط: قبل ${daysSinceUpdate} أيام`;
+                statusColor = '#eab308';
+            } else {
+                statusText = 'نقاط قليلة';
+                statusColor = '#fbbf24';
+            }
+            
+            html += `<div class="inactive-card">
+                <div style="display:flex; justify-content:space-between; align-items:start; margin-bottom:8px;">
+                    <div>
+                        <div style="font-weight:bold; font-size:15px; color:#fff; margin-bottom:5px;">${person.name}</div>
+                        <div class="inactive-badge" style="background:${statusColor};">${statusText}</div>
+                    </div>
+                    <div style="font-size:24px; font-weight:bold; color:#fbbf24;">${person.score}</div>
+                </div>
+                
+                <div style="font-size:12px; color:#94a3b8; margin-bottom:8px;">
+                    📱 ${phoneNumber}
+                </div>
+                
+                <div style="display:flex; gap:5px;">
+                    <button class="contact-btn" onclick="callMakhdoum('${phoneNumber}')" style="flex:1;">
+                        📞 اتصل
+                    </button>
+                    <button class="contact-btn" onclick="whatsappMakhdoum('${phoneNumber}', '${person.name}')" style="flex:1; background:#25d366;">
+                        💬 واتساب
+                    </button>
+                    <button class="contact-btn" onclick="sendDigitalEncouragement('${person.id}', '${person.name}')" style="flex:1; background:#6366f1;">
+                        📨 رسالة
+                    </button>
+                </div>
+            </div>`;
+        });
+        
+        listDiv.innerHTML = html;
+    }
+    
+    function toggleInactiveList() {
+        const listDiv = document.getElementById('inactiveList');
+        if (listDiv.style.display === 'none') {
+            listDiv.style.display = 'block';
+            displayInactiveList();
+        } else {
+            listDiv.style.display = 'none';
+        }
+    }
+    
+    function sendEncouragementToAll() {
+        const inactive = getInactiveMakhdoumeen();
+        
+        if (inactive.length === 0) {
+            alert('كل المخدومين نشطين! 🎉 مفيش حد محتاج تشجيع دلوقتي.');
+            return;
+        }
+        
+        if (!confirm(`هل تريد إرسال رسائل تشجيعية لـ ${inactive.length} مخدوم؟\n\nسيتم إرسال رسالة داخل التطبيق لكل واحد فيهم.`)) {
+            return;
+        }
+        
+        const timestamp = Date.now();
+        const updates = {};
+        
+        inactive.forEach(person => {
+            const messageId = `${person.id}_${timestamp}`;
+            updates[`encouragement_messages/${messageId}`] = {
+                to: person.name,
+                toId: person.id,
+                from: currentServant,
+                message: `وحشتنا يا ${person.name}! 💙\nاحنا محتاجينك معانا في الخدمة.\nربنا يفرح قلبك ويقويك! 🙏`,
+                timestamp: timestamp,
+                read: false
+            };
+        });
+        
+        db.ref().update(updates).then(() => {
+            alert(`تم إرسال ${inactive.length} رسالة تشجيعية بنجاح! ✅\n\nالرسائل هتظهر للمخدومين لما يفتحوا التطبيق.`);
+            db.ref("activity_logs").push(`${currentServant}: أرسل رسائل تشجيعية لـ ${inactive.length} مخدوم`);
+        });
+    }
+    
+    function sendDigitalEncouragement(personId, personName) {
+        const message = prompt(`اكتب رسالة تشجيعية لـ ${personName}:`, `وحشتنا يا ${personName}! 💙 عايزين نشوفك معانا في الخدمة.`);
+        
+        if (!message || message.trim() === '') return;
+        
+        const messageId = `${personId}_${Date.now()}`;
+        db.ref(`encouragement_messages/${messageId}`).set({
+            to: personName,
+            toId: personId,
+            from: currentServant,
+            message: message.trim(),
+            timestamp: Date.now(),
+            read: false
+        }).then(() => {
+            alert(`تم إرسال الرسالة لـ ${personName} بنجاح! ✅`);
+            db.ref("activity_logs").push(`${currentServant}: أرسل رسالة تشجيعية لـ ${personName}`);
+        });
+    }
+    
+    function callMakhdoum(phone) {
+        if (phone === 'لا يوجد رقم') {
+            alert('لا يوجد رقم تليفون مسجل لهذا المخدوم.');
+            return;
+        }
+        window.location.href = `tel:${phone}`;
+    }
+    
+    function whatsappMakhdoum(phone, name) {
+        if (phone === 'لا يوجد رقم') {
+            alert('لا يوجد رقم واتساب مسجل لهذا المخدوم.');
+            return;
+        }
+        
+        const message = `السلام عليكم يا ${name}! 💙\n\nوحشتنا في خدمة إعدادي وعايزين نشوفك معانا.\nربنا يفرح قلبك! 🙏`;
+        const encodedMessage = encodeURIComponent(message);
+        
+        // إزالة أي مسافات أو أحرف خاصة من رقم التليفون
+        const cleanPhone = phone.replace(/[^0-9+]/g, '');
+        
+        window.open(`https://wa.me/${cleanPhone}?text=${encodedMessage}`, '_blank');
+    }
+    
+    // تحديث قائمة الغير نشطين كل دقيقة
+    setInterval(() => {
+        const listDiv = document.getElementById('inactiveList');
+        if (listDiv.style.display !== 'none') {
+            displayInactiveList();
+        }
+    }, 60000); // كل دقيقة
 
 </script>
 </body>
