@@ -72,6 +72,28 @@
         .inactive-badge { background: #ef4444; color: white; padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: bold; display: inline-block; margin-bottom: 8px; }
         .contact-btn { background: #22c55e; color: white; padding: 8px 15px; border-radius: 8px; font-size: 12px; font-weight: bold; margin-top: 8px; cursor: pointer; }
         .contact-btn:hover { background: #16a34a; }
+        
+        /* تنسيق مربع تفاصيل النقاط */
+        .breakdown-box { background: rgba(0,0,0,0.3); padding: 8px; border-radius: 8px; font-size: 11px; margin-top: 10px; border: 1px solid rgba(251,191,36,0.3); }
+        .breakdown-row { display: flex; justify-content: space-between; margin-bottom: 4px; padding: 3px 0; }
+        .breakdown-label { color: #94a3b8; }
+        .breakdown-value { color: #fbbf24; font-weight: bold; }
+        
+        /* تنسيق نافذة تعديل التفاصيل */
+        .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 9999; justify-content: center; align-items: center; }
+        .modal-content-breakdown { background: #1e293b; padding: 25px; border-radius: 20px; width: 90%; max-width: 400px; border: 2px solid #6366f1; }
+        .modal-input-group { margin-bottom: 15px; }
+        .modal-label { display: block; color: #94a3b8; margin-bottom: 5px; font-size: 13px; }
+        .modal-input { width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #334155; background: #0f172a; color: white; font-size: 16px; box-sizing: border-box; }
+        .modal-total-box { background: rgba(251,191,36,0.1); padding: 15px; border-radius: 10px; margin-bottom: 20px; border: 1px solid #fbbf24; display: flex; justify-content: space-between; align-items: center; }
+        .modal-buttons { display: flex; gap: 10px; }
+        .modal-btn-save { flex: 1; background: #22c55e; color: white; padding: 12px; border-radius: 10px; border: none; font-weight: bold; cursor: pointer; font-size: 15px; }
+        .modal-btn-cancel { flex: 1; background: #ef4444; color: white; padding: 12px; border-radius: 10px; border: none; font-weight: bold; cursor: pointer; font-size: 15px; }
+        
+        /* تنسيق سجل التأكيدات */
+        .confirmation-card { background: #1e293b; padding: 12px; border-radius: 10px; margin-bottom: 10px; }
+        .confirmation-header { display: flex; justify-content: space-between; align-items: center; }
+        .confirmation-status { font-size: 11px; font-weight: bold; }
     </style>
 </head>
 <body>
@@ -236,6 +258,19 @@
         <div id="prayerReportsList" style="max-height: 300px; overflow-y: auto; background: #020617; padding: 10px; border-radius: 10px;">
             <p style="text-align:center; color:gray; font-size:12px;">جاري تحميل التقارير...</p>
         </div>
+    </div>
+
+    <!-- قسم سجل تأكيدات القداس -->
+    <div class="section" style="border: 2px solid #22c55e;">
+        <h3 style="color: #22c55e; text-align: center; margin-top: 0;">📋 سجل تأكيدات حضور القداس</h3>
+        <p style="font-size: 12px; color: #94a3b8; text-align: center; margin-bottom: 15px;">
+            عرض آخر 50 طلب تأكيد للقداس • تحديث تلقائي كل دقيقة
+        </p>
+        <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+            <button onclick="loadConfirmationHistory()" style="flex: 2; padding: 12px; background: #22c55e; border-radius: 10px; font-weight: bold;">🔄 تحديث السجل</button>
+            <button onclick="generateConfirmationReport()" style="flex: 1; padding: 12px; background: #6366f1; border-radius: 10px; font-weight: bold;">📊 تقرير</button>
+        </div>
+        <div id="confirmationHistory" style="max-height: 400px; overflow-y: auto;"></div>
     </div>
 
     <div class="section" style="border-right: 4px solid #6366f1;">
@@ -694,10 +729,39 @@
         const list = document.getElementById('leaderboard'); list.innerHTML = "";
         localData.sort((a,b) => b.score - a.score).forEach((p) => {
             const phoneDisplay = p.phone ? `<div style="font-size:10px; color:#94a3b8; margin-top:2px;">📱 ${p.phone}</div>` : '';
-            list.innerHTML += `<div class="card"><div style="font-size:11px; font-weight:bold; height:28px; overflow:hidden;">${p.name}</div>${phoneDisplay}<div style="font-size:22px; font-weight:bold; color:#fbbf24;">${p.score}</div>
-                <div class="edit-tools" style="display: ${isEditMode ? 'block' : 'none'}"><div class="plus-minus"><button onclick="updateScore('${p.id}', 1)" style="background:#475569">+1</button><button onclick="updateScore('${p.id}', 5)" style="background:#6366f1">+5</button><button onclick="updateScore('${p.id}', -1)" style="background:#ef4444">-1</button></div>
-                <button onclick="resetSingleScore('${p.id}', '${p.name}')" style="background:#fb923c; width:100%; padding:8px; font-size:10px; margin-top:5px; font-weight:bold;">🔄 تصفير</button>
-                <button onclick="deleteMakhdoum('${p.id}', '${p.name}')" style="color:#f87171; background:none; font-size:9px; margin-top:5px;">حذف آمن 🔒</button></div></div>`;
+            const breakdown = p.breakdown || { quiz: 0, prayer: 0, attendance: 0 };
+            
+            list.innerHTML += `<div class="card">
+                <div style="font-size:11px; font-weight:bold; height:28px; overflow:hidden;">${p.name}</div>
+                ${phoneDisplay}
+                <div style="font-size:22px; font-weight:bold; color:#fbbf24;">${p.score}</div>
+                
+                <div class="breakdown-box">
+                    <div class="breakdown-row">
+                        <span class="breakdown-label">🙏 صلاة:</span>
+                        <span class="breakdown-value">${breakdown.prayer || 0}</span>
+                    </div>
+                    <div class="breakdown-row">
+                        <span class="breakdown-label">📖 مسابقة:</span>
+                        <span class="breakdown-value">${breakdown.quiz || 0}</span>
+                    </div>
+                    <div class="breakdown-row">
+                        <span class="breakdown-label">⛪ حضور:</span>
+                        <span class="breakdown-value">${breakdown.attendance || 0}</span>
+                    </div>
+                </div>
+                
+                <div class="edit-tools" style="display: ${isEditMode ? 'block' : 'none'}">
+                    <div class="plus-minus">
+                        <button onclick="updateScore('${p.id}', 1)" style="background:#475569">+1</button>
+                        <button onclick="updateScore('${p.id}', 5)" style="background:#6366f1">+5</button>
+                        <button onclick="updateScore('${p.id}', -1)" style="background:#ef4444">-1</button>
+                    </div>
+                    <button onclick="openEditBreakdownModal('${p.id}', '${p.name}')" style="background: #6366f1; width: 100%; padding: 8px; font-size: 11px; margin-top: 5px; font-weight: bold;">⚙️ تعديل التفاصيل</button>
+                    <button onclick="resetSingleScore('${p.id}', '${p.name}')" style="background:#fb923c; width:100%; padding:8px; font-size:10px; margin-top:5px; font-weight:bold;">🔄 تصفير</button>
+                    <button onclick="deleteMakhdoum('${p.id}', '${p.name}')" style="color:#f87171; background:none; font-size:9px; margin-top:5px;">حذف آمن 🔒</button>
+                </div>
+            </div>`;
         });
     }
 
@@ -977,6 +1041,278 @@
         }
     }, 60000); // كل دقيقة
 
+    // ===== نظام تعديل تفاصيل النقاط =====
+    
+    let currentEditingPersonId = null;
+    
+    function openEditBreakdownModal(personId, personName) {
+        currentEditingPersonId = personId;
+        
+        db.ref(`points_data/${personId}`).once('value', snap => {
+            const person = snap.val();
+            const breakdown = person.breakdown || { quiz: 0, prayer: 0, attendance: 0 };
+            
+            document.getElementById('editPersonName').textContent = personName;
+            document.getElementById('editPrayer').value = breakdown.prayer || 0;
+            document.getElementById('editQuiz').value = breakdown.quiz || 0;
+            document.getElementById('editAttendance').value = breakdown.attendance || 0;
+            
+            updateEditTotal();
+            
+            document.getElementById('editBreakdownModal').style.display = 'flex';
+        });
+    }
+    
+    function updateEditTotal() {
+        const prayer = parseInt(document.getElementById('editPrayer').value) || 0;
+        const quiz = parseInt(document.getElementById('editQuiz').value) || 0;
+        const attendance = parseInt(document.getElementById('editAttendance').value) || 0;
+        
+        document.getElementById('editTotal').textContent = prayer + quiz + attendance;
+    }
+    
+    function saveBreakdownChanges() {
+        const prayer = parseInt(document.getElementById('editPrayer').value) || 0;
+        const quiz = parseInt(document.getElementById('editQuiz').value) || 0;
+        const attendance = parseInt(document.getElementById('editAttendance').value) || 0;
+        const total = prayer + quiz + attendance;
+        
+        db.ref(`points_data/${currentEditingPersonId}`).once('value', snap => {
+            const person = snap.val();
+            
+            db.ref(`points_data/${currentEditingPersonId}`).update({
+                breakdown: {
+                    prayer: prayer,
+                    quiz: quiz,
+                    attendance: attendance
+                },
+                score: total,
+                lastUpdate: Date.now()
+            }).then(() => {
+                alert('✅ تم التحديث بنجاح!');
+                closeBreakdownModal();
+                
+                // تسجيل في السجل
+                db.ref("activity_logs").push(
+                    `${currentServant}: عدل ${person.name} → 🙏${prayer} 📖${quiz} ⛪${attendance} = ${total}`
+                );
+            });
+        });
+    }
+    
+    function closeBreakdownModal() {
+        document.getElementById('editBreakdownModal').style.display = 'none';
+        currentEditingPersonId = null;
+    }
+    
+    // تحديث المجموع تلقائياً عند تغيير أي حقل
+    document.addEventListener('DOMContentLoaded', () => {
+        ['editPrayer', 'editQuiz', 'editAttendance'].forEach(id => {
+            const input = document.getElementById(id);
+            if (input) {
+                input.addEventListener('input', updateEditTotal);
+            }
+        });
+    });
+    
+    // ===== نظام عرض سجل التأكيدات =====
+    
+    function loadConfirmationHistory() {
+        const historyDiv = document.getElementById('confirmationHistory');
+        historyDiv.innerHTML = '<p style="text-align:center; color:#94a3b8;">جاري التحميل...</p>';
+        
+        db.ref("confirmation_requests").orderByChild('timestamp').limitToLast(50).once('value', snap => {
+            if (!snap.exists()) {
+                historyDiv.innerHTML = '<p style="text-align:center; color:#94a3b8; font-size:12px;">لا يوجد سجل تأكيدات حتى الآن</p>';
+                return;
+            }
+            
+            const confirmations = [];
+            snap.forEach(child => {
+                confirmations.push({ key: child.key, ...child.val() });
+            });
+            
+            // ترتيب من الأحدث للأقدم
+            confirmations.reverse();
+            
+            let html = '';
+            
+            confirmations.forEach(req => {
+                const date = new Date(req.timestamp);
+                const dateStr = date.toLocaleDateString('ar-EG', { 
+                    weekday: 'short', 
+                    year: 'numeric', 
+                    month: 'short', 
+                    day: 'numeric' 
+                });
+                const timeStr = date.toLocaleTimeString('ar-EG', { 
+                    hour: '2-digit', 
+                    minute: '2-digit' 
+                });
+                
+                let statusIcon = '';
+                let statusColor = '';
+                let statusText = '';
+                
+                if (req.status === 'confirmed') {
+                    statusIcon = '✅';
+                    statusColor = '#22c55e';
+                    statusText = 'تم التأكيد';
+                } else if (req.status === 'pending') {
+                    statusIcon = '⏳';
+                    statusColor = '#fbbf24';
+                    statusText = 'في الانتظار';
+                } else {
+                    statusIcon = '❌';
+                    statusColor = '#ef4444';
+                    statusText = 'مرفوض';
+                }
+                
+                html += `
+                    <div class="confirmation-card" style="border-right: 4px solid ${statusColor};">
+                        <div class="confirmation-header">
+                            <div>
+                                <div style="font-weight: bold; color: white; margin-bottom: 5px;">
+                                    ${statusIcon} ${req.requester}
+                                </div>
+                                <div style="font-size: 12px; color: #94a3b8;">
+                                    طلب تأكيد من: <span style="color: #fbbf24;">${req.confirmer}</span>
+                                </div>
+                            </div>
+                            <div style="text-align: left;">
+                                <div style="font-size: 11px; color: #64748b;">
+                                    ${dateStr}
+                                </div>
+                                <div style="font-size: 11px; color: #64748b;">
+                                    ${timeStr}
+                                </div>
+                                <div class="confirmation-status" style="color: ${statusColor}; margin-top: 5px;">
+                                    ${statusText}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            historyDiv.innerHTML = html;
+        });
+    }
+    
+    // تحديث تلقائي للسجل كل دقيقة
+    setInterval(() => {
+        const historyDiv = document.getElementById('confirmationHistory');
+        if (historyDiv && historyDiv.innerHTML && !historyDiv.innerHTML.includes('جاري التحميل')) {
+            loadConfirmationHistory();
+        }
+    }, 60000);
+    
+    // ===== تقرير شامل للتأكيدات =====
+    
+    function generateConfirmationReport() {
+        db.ref("confirmation_requests").once('value', snap => {
+            if (!snap.exists()) {
+                alert('لا يوجد بيانات تأكيدات حتى الآن.');
+                return;
+            }
+            
+            const stats = {
+                total: 0,
+                confirmed: 0,
+                pending: 0,
+                rejected: 0,
+                byPerson: {}
+            };
+            
+            snap.forEach(child => {
+                const req = child.val();
+                stats.total++;
+                
+                if (req.status === 'confirmed') stats.confirmed++;
+                else if (req.status === 'pending') stats.pending++;
+                else if (req.status === 'rejected') stats.rejected++;
+                
+                // إحصائيات لكل شخص
+                if (!stats.byPerson[req.requester]) {
+                    stats.byPerson[req.requester] = {
+                        requested: 0,
+                        confirmed: 0,
+                        confirmedForOthers: 0
+                    };
+                }
+                
+                stats.byPerson[req.requester].requested++;
+                if (req.status === 'confirmed') {
+                    stats.byPerson[req.requester].confirmed++;
+                }
+                
+                // عدد المرات اللي أكد فيها للآخرين
+                if (!stats.byPerson[req.confirmer]) {
+                    stats.byPerson[req.confirmer] = {
+                        requested: 0,
+                        confirmed: 0,
+                        confirmedForOthers: 0
+                    };
+                }
+                if (req.status === 'confirmed') {
+                    stats.byPerson[req.confirmer].confirmedForOthers++;
+                }
+            });
+            
+            let report = `📊 تقرير التأكيدات الشامل\n${'='.repeat(40)}\n\n`;
+            report += `📌 إجمالي الطلبات: ${stats.total}\n`;
+            report += `✅ تم التأكيد: ${stats.confirmed}\n`;
+            report += `⏳ في الانتظار: ${stats.pending}\n`;
+            report += `❌ مرفوض: ${stats.rejected}\n\n`;
+            report += `${'='.repeat(40)}\n\n`;
+            report += `👥 تفاصيل الأشخاص:\n\n`;
+            
+            Object.keys(stats.byPerson).forEach(person => {
+                const data = stats.byPerson[person];
+                report += `${person}:\n`;
+                report += `  • طلب تأكيد: ${data.requested} مرة\n`;
+                report += `  • تم التأكيد له: ${data.confirmed} مرة\n`;
+                report += `  • أكد للآخرين: ${data.confirmedForOthers} مرة\n\n`;
+            });
+            
+            console.log(report);
+            alert(report);
+        });
+    }
+
 </script>
+<!-- نافذة تعديل تفاصيل النقاط -->
+<div id="editBreakdownModal" class="modal-overlay">
+    <div class="modal-content-breakdown">
+        <h3 style="color: #fbbf24; text-align: center; margin-top: 0;">⚙️ تعديل تفاصيل النقاط</h3>
+        <div id="editPersonName" style="text-align: center; color: #94a3b8; font-size: 14px; margin-bottom: 20px;"></div>
+        
+        <div class="modal-input-group">
+            <label class="modal-label">🙏 نقاط الصلاة:</label>
+            <input type="number" id="editPrayer" class="modal-input" min="0">
+        </div>
+        
+        <div class="modal-input-group">
+            <label class="modal-label">📖 نقاط المسابقة:</label>
+            <input type="number" id="editQuiz" class="modal-input" min="0">
+        </div>
+        
+        <div class="modal-input-group">
+            <label class="modal-label">⛪ نقاط الحضور:</label>
+            <input type="number" id="editAttendance" class="modal-input" min="0">
+        </div>
+        
+        <div class="modal-total-box">
+            <span style="color: #94a3b8; font-size: 14px;">📊 المجموع:</span>
+            <span id="editTotal" style="color: #fbbf24; font-size: 24px; font-weight: bold;">0</span>
+        </div>
+        
+        <div class="modal-buttons">
+            <button class="modal-btn-save" onclick="saveBreakdownChanges()">✅ حفظ</button>
+            <button class="modal-btn-cancel" onclick="closeBreakdownModal()">❌ إلغاء</button>
+        </div>
+    </div>
+</div>
+
 </body>
 </html>
