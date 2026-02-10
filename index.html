@@ -101,8 +101,9 @@
 <div id="login">
     <div class="login-box">
         <h3 style="margin-top:0;">† دخول الخدام †</h3>
-        <input type="password" id="passInput" placeholder="أدخل كلمة السر">
+        <input type="password" id="passInput" placeholder="أدخل كلمة السر" onkeydown="if(event.key==='Enter') checkPass()">
         <button onclick="checkPass()" style="background: #22c55e; width: 100%; padding: 12px; margin-top: 15px; font-weight: bold; border-radius: 8px;">دخول</button>
+        <p id="loginError" style="color:#ef4444; font-size:12px; margin-top:10px; display:none;"></p>
     </div>
 </div>
 
@@ -115,6 +116,14 @@
     <div class="section" style="border: 2px solid #fbbf24; display: flex; justify-content: space-between; align-items: center; background: rgba(251, 191, 36, 0.1);">
         <span style="font-weight: bold; color: #fbbf24;">ظهور المسابقة للمخدومين:</span>
         <button id="quizVisibilityBtn" onclick="toggleQuizVisibility()" style="padding: 10px 20px; font-weight: bold; background: #ef4444; border-radius: 8px; color: white;">مخفية الآن ❌</button>
+    </div>
+
+    <!-- ═════════════════════════════════════════════════ -->
+    <!-- 💬 زر التحكم في ظهور ركن الدردشة (الإضافة الجديدة) -->
+    <!-- ═════════════════════════════════════════════════ -->
+    <div class="section" style="border: 2px solid #ef4444; display: flex; justify-content: space-between; align-items: center; background: rgba(239, 68, 68, 0.1);">
+        <span style="font-weight: bold; color: #ef4444;">ظهور ركن الدردشة للمخدومين:</span>
+        <button id="chatVisibilityBtn" onclick="toggleChatVisibility()" style="padding: 10px 20px; font-weight: bold; background: #22c55e; border-radius: 8px; color: white;">ظاهر الآن ✅</button>
     </div>
 
     <button onclick="toggleQuizSection()" style="width: 100%; padding: 12px; margin-bottom: 15px; background: #334155; color: #fbbf24; font-weight: bold; border-radius: 10px; border: 1px solid #fbbf24; cursor: pointer;">⚙️ إعدادات الأسئلة والنتائج</button>
@@ -338,19 +347,26 @@
 
     function checkPass() {
         const input = document.getElementById('passInput').value.trim().toLowerCase();
+        const errEl = document.getElementById('loginError');
         if(users[input]) {
             currentServant = users[input];
             document.getElementById('login').style.display = 'none';
             document.getElementById('admin').style.display = 'block';
             document.getElementById('welcomeServant').innerText = "أهلاً يا " + currentServant;
-            startListening();
-            loadCurrentHints(); 
-            listenToPrayerReports();
-        } else { alert("كلمة السر خطأ!"); }
+            try { startListening(); } catch(e) { console.warn("startListening error:", e); }
+            try { loadCurrentHints(); } catch(e) { console.warn("loadCurrentHints error:", e); }
+            try { listenToPrayerReports(); } catch(e) { console.warn("listenToPrayerReports error:", e); }
+        } else { 
+            if(errEl) { errEl.style.display = 'block'; errEl.innerText = '❌ كلمة السر خطأ!'; }
+            else { alert("كلمة السر خطأ!"); }
+            document.getElementById('passInput').value = '';
+            document.getElementById('passInput').focus();
+        }
     }
 
     function startListening() {
         listenQuizStatus(); 
+        loadChatVisibility(); // تحميل حالة ركن الدردشة
         loadPointsBreakdown();
         db.ref("settings/quizTimer").on("value", snap => { if(snap.exists()) document.getElementById('quizTimerInp').value = snap.val(); });
         db.ref("points_data").on("value", snap => {
@@ -1279,6 +1295,52 @@
             alert(report);
         });
     }
+
+// ═════════════════════════════════════════════════
+// 💬 دالة التحكم في ظهور ركن الدردشة (الإضافة الجديدة)
+// ═════════════════════════════════════════════════
+
+function toggleChatVisibility() {
+    const btn = document.getElementById('chatVisibilityBtn');
+    
+    // قراءة الحالة الحالية
+    db.ref('settings/chatSectionVisible').once('value').then(snap => {
+        const currentState = snap.val() !== false; // default true
+        const newState = !currentState;
+        
+        // حفظ الحالة الجديدة
+        db.ref('settings/chatSectionVisible').set(newState).then(() => {
+            // تحديث الزر
+            if (newState) {
+                btn.textContent = 'ظاهر الآن ✅';
+                btn.style.background = '#22c55e';
+            } else {
+                btn.textContent = 'مخفي الآن ❌';
+                btn.style.background = '#ef4444';
+            }
+            
+            alert(newState ? '✅ ركن الدردشة أصبح ظاهر للمخدومين' : '❌ ركن الدردشة أصبح مخفي عن المخدومين');
+        });
+    });
+}
+
+// تحميل حالة ركن الدردشة عند فتح الصفحة
+function loadChatVisibility() {
+    db.ref('settings/chatSectionVisible').on('value', snap => {
+        const isVisible = snap.val() !== false; // default true
+        const btn = document.getElementById('chatVisibilityBtn');
+        
+        if (btn) {
+            if (isVisible) {
+                btn.textContent = 'ظاهر الآن ✅';
+                btn.style.background = '#22c55e';
+            } else {
+                btn.textContent = 'مخفي الآن ❌';
+                btn.style.background = '#ef4444';
+            }
+        }
+    });
+}
 
 </script>
 <!-- نافذة تعديل تفاصيل النقاط -->
