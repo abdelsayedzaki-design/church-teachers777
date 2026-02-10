@@ -1314,5 +1314,119 @@
     </div>
 </div>
 
+<!-- ═════════════════════════════════════════════════ -->
+<!-- 🔄 زر التحديث الإجباري لكل المخدومين -->
+<!-- ═════════════════════════════════════════════════ -->
+
+<button onclick="forceUpdateAllUsers()" style="
+    position: fixed;
+    bottom: 20px;
+    left: 20px;
+    background: linear-gradient(135deg, #f59e0b, #d97706);
+    color: white;
+    border: none;
+    padding: 14px 24px;
+    border-radius: 12px;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 0 6px 20px rgba(245, 158, 11, 0.4);
+    z-index: 9999;
+    transition: all 0.3s ease;
+    font-family: 'Segoe UI', sans-serif;
+" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 8px 25px rgba(245, 158, 11, 0.6)'" 
+   onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 6px 20px rgba(245, 158, 11, 0.4)'">
+    🔄 تحديث إجباري للكل
+</button>
+
+<script>
+// ═════════════════════════════════════════════════
+// 🔄 دالة التحديث الإجباري لكل المخدومين
+// ═════════════════════════════════════════════════
+
+function forceUpdateAllUsers() {
+    const confirmation = confirm(
+        '🔄 تحديث إجباري لكل المخدومين\n\n' +
+        'هل أنت متأكد؟\n\n' +
+        'سيتم إعادة تحميل الموقع تلقائياً لكل المخدومين اللي فاتحين الموقع دلوقتي!\n\n' +
+        '⚠️ استخدم هذا الزر فقط بعد رفع كود جديد.'
+    );
+    
+    if (!confirmation) return;
+    
+    // إرسال أمر التحديث لـ Firebase
+    const updateTrigger = {
+        timestamp: Date.now(),
+        triggered_by: 'admin',
+        triggered_at: new Date().toLocaleString('ar-EG')
+    };
+    
+    db.ref('force_update_trigger').set(updateTrigger).then(() => {
+        // رسالة نجاح
+        const successMsg = document.createElement('div');
+        successMsg.style.cssText = `
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: white;
+            padding: 25px 35px;
+            border-radius: 15px;
+            text-align: center;
+            z-index: 99999;
+            box-shadow: 0 8px 30px rgba(16, 185, 129, 0.5);
+            font-size: 16px;
+            font-weight: 700;
+            animation: successPulse 0.5s ease;
+        `;
+        successMsg.innerHTML = `
+            ✅ تم إرسال أمر التحديث!<br>
+            <small style="font-size:13px; opacity:0.9; font-weight:500; margin-top:8px; display:block;">
+                كل المخدومين هيعملوا Refresh تلقائي خلال ثواني
+            </small>
+        `;
+        
+        document.body.appendChild(successMsg);
+        
+        // إخفاء الرسالة بعد 3 ثواني
+        setTimeout(() => {
+            successMsg.style.animation = 'fadeOut 0.3s ease';
+            setTimeout(() => successMsg.remove(), 300);
+        }, 3000);
+        
+    }).catch(error => {
+        alert('❌ حدث خطأ: ' + error.message);
+    });
+}
+
+// CSS Animations
+const forceUpdateStyle = document.createElement('style');
+forceUpdateStyle.textContent = `
+    @keyframes successPulse {
+        0% {
+            opacity: 0;
+            transform: translate(-50%, -50%) scale(0.8);
+        }
+        50% {
+            transform: translate(-50%, -50%) scale(1.05);
+        }
+        100% {
+            opacity: 1;
+            transform: translate(-50%, -50%) scale(1);
+        }
+    }
+    
+    @keyframes fadeOut {
+        to {
+            opacity: 0;
+            transform: translate(-50%, -50%) scale(0.9);
+        }
+    }
+`;
+document.head.appendChild(forceUpdateStyle);
+
+</script>
+
 </body>
 </html>
